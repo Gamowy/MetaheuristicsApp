@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetaheuristicsPlatform", "MetaheuristicsPlatform\MetaheuristicsPlatform\MetaheuristicsPlatform.csproj", "{321C83A0-7BEE-46F3-A8B8-78E38806BD17}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8} = {0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetaheuristicsAPI", "MetaheuristicsAPI\MetaheuristicsAPI\MetaheuristicsAPI.csproj", "{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{321C83A0-7BEE-46F3-A8B8-78E38806BD17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{321C83A0-7BEE-46F3-A8B8-78E38806BD17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{321C83A0-7BEE-46F3-A8B8-78E38806BD17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{321C83A0-7BEE-46F3-A8B8-78E38806BD17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C69D40A-D20E-45D0-A6B1-F0A261E3F3A8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

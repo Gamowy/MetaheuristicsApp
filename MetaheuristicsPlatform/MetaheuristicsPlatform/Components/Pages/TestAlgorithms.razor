@@ -1,0 +1,15 @@
+@page "/test"
+@rendermode InteractiveServer
+
+<PageTitle>Metaheurystyki - testowanie</PageTitle>
+
+<h1>Testowanie wybranego algorytmu</h1>
+<p class="lead">Przetestuj wybrany algorytm dla ustalonych parametrów i funkcji testowych</p>
+
+<Button Color="ButtonColor.Primary" class="mb-5" @onclick="Test"> Test </Button>
+
+@code {
+	static void Test() {
+		Console.WriteLine("Test");
+	}
+}    
