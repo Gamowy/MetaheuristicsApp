@@ -1,6 +1,6 @@
-﻿namespace MetaheuristicsAPI
+﻿namespace MetaheuristicsAPI.Payloads
 {
-    public class TestResults
+    public record TestResults
     {
         public required double[] XBest { get; set; }
         public required double FBest { get; set; }

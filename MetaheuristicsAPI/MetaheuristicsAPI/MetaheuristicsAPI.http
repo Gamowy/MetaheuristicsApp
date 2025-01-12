@@ -8,7 +8,19 @@ Content-Type: application/json
   "i": 80,
   "fun": "rastrigin",
   "dim": 2,
-  "domain": null,
   "parameters": null
 }
+###
+
+GET {{MetaheuristicsAPI_HostAddress}}/algorithms
+
+###
+
+@algorithm=string
+GET {{MetaheuristicsAPI_HostAddress}}/algorithms/params/{{algorithm}}
+
+###
+
+GET {{MetaheuristicsAPI_HostAddress}}/functions
+
 ###

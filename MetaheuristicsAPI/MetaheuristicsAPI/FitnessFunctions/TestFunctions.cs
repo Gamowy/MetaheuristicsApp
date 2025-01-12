@@ -3,13 +3,14 @@
     public class TestFunctions
     {
         // -5.12 <= x_n <= 5.12, Dim = 2,5,10,30 
-        public static double[,] RastriginDomain(int dim)
+        public static double[][] RastriginDomain(int dim)
         {
-            double[,] domain = new double[dim, 2];
+            double[][] domain = new double[dim][];
             for (int i = 0; i < dim; i++)
             {
-                domain[i, 0] = -5.12;
-                domain[i, 1] = 5.12;
+                domain[i] = new double[2];
+                domain[i][0] = -5.12;
+                domain[i][1] = 5.12;
             }
             return domain;
         }
@@ -26,13 +27,14 @@
         }
 
         // -inf <= x_n <= inf, Dim = 2,5,10,30
-        public static double[,] RosenbrockDomain(int dim)
+        public static double[][] RosenbrockDomain(int dim)
         {
-            double[,] domain = new double[dim, 2];
+            double[][] domain = new double[dim][];
             for (int i = 0; i < dim; i++)
             {
-                domain[i, 0] = -2;
-                domain[i, 1] = 2;
+                domain[i] = new double[2];
+                domain[i][0] = -2;
+                domain[i][1] = 2;
             }
             return domain;
         }
@@ -48,13 +50,14 @@
         }
 
         // -inf <= x_n <= inf, Dim = 2,5,10,30,50
-        public static double[,] SphereDomain(int dim)
+        public static double[][] SphereDomain(int dim)
         {
-            double[,] domain = new double[dim, 2];
+            double[][] domain = new double[dim][];
             for (int i = 0; i < dim; i++)
             {
-                domain[i, 0] = -2;
-                domain[i, 1] = 2;
+                domain[i] = new double[2];
+                domain[i][0] = -2;
+                domain[i][1] = 2;
             }
             return domain;
         }
@@ -70,13 +73,14 @@
         }
 
         // -4.5 <= x,y <= 4.5, Dim = 2
-        public static double[,] BealeDomain()
+        public static double[][] BealeDomain()
         {
-            double[,] domain = new double[2, 2];
+            double[][] domain = new double[2][];
             for (int i = 0; i < 2; i++)
             {
-                domain[i, 0] = -4.5;
-                domain[i, 1] = 4.5;
+                domain[i] = new double[2];
+                domain[i][0] = -4.5;
+                domain[i][1] = 4.5;
             }
             return domain;
         }
@@ -87,13 +91,15 @@
         }
 
         // -15 <= x <= -5, -3 <= y <= 3 Dim = 2
-        public static double[,] BunkinN6Domain()
+        public static double[][] BunkinN6Domain()
         {
-            double[,] domain = new double[2, 2];
-            domain[0, 0] = -15;
-            domain[0, 1] = -5;
-            domain[1, 0] = -3;
-            domain[1, 1] = 3;
+            double[][] domain = new double[2][];
+            domain[0] = new double[2];
+            domain[1] = new double[2];
+            domain[0][0] = -15;
+            domain[0][1] = -5;
+            domain[1][0] = -3;
+            domain[1][1] = 3;
             return domain;
         }
 
@@ -103,13 +109,14 @@
         }
 
         // -5 <= x,y <= 5, Dim = 2
-        public static double[,] HimmelblauDomain()
+        public static double[][] HimmelblauDomain()
         {
-            double[,] domain = new double[2, 2];
+            double[][] domain = new double[2][];
             for (int i = 0; i < 2; i++)
             {
-                domain[i, 0] = -5;
-                domain[i, 1] = 5;
+                domain[i] = new double[2];
+                domain[i][0] = -5;
+                domain[i][1] = 5;
             }
             return domain;
         }

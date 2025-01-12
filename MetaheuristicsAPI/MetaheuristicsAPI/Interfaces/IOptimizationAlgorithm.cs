@@ -12,7 +12,7 @@
         // listę pozostałych wymaganych parametrów algorytmu ( tylko wartości , w kolejno
         // ści takiej jak w ParamsInfo ).
         // Po wykonaniu ustawia odpowiednie właściwości: XBest , Fbest , NumberOfEvaluationFitnessFunction
-        void Solve(fitnessFunction f, double[,] domain, params double[]? parameters);
+        void Solve(fitnessFunction f, double[][] domain, params double[]? parameters);
 
         // Lista informacji o kolejnych parametrach algorytmu
         ParamInfo[] ParamsInfo { get; set; }

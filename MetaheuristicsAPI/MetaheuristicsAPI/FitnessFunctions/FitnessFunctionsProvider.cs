@@ -1,9 +1,23 @@
 ﻿using MetaheuristicsAPI.Interfaces;
+using MetaheuristicsAPI.Payloads;
 
 namespace MetaheuristicsAPI.FitnessFunctions
 {
     public class FitnessFunctionsProvider
     {
+        public static FitnessFunctionPayload[] GetFitnessfunctionsPayloads()
+        {
+            return
+            [
+                new FitnessFunctionPayload("rastrigin", true),
+                new FitnessFunctionPayload("rosenbrock", true),
+                new FitnessFunctionPayload("sphere", true),
+                new FitnessFunctionPayload("beale", false, [2]),
+                new FitnessFunctionPayload("bunkinn6", false, [2]),
+                new FitnessFunctionPayload("himmelblau", false, [2]),
+            ];
+        }
+
         public static fitnessFunction? GetFitnessFunction(string functionName)
         {
             switch (functionName.ToLower())
@@ -25,7 +39,7 @@ namespace MetaheuristicsAPI.FitnessFunctions
             }
         }
 
-        public static double[,]? GetDomain(string functionName, int dim)
+        public static double[][]? GetDomain(string functionName, int dim)
         {
             switch (functionName.ToLower())
             {

@@ -45,32 +45,51 @@ namespace MetaheuristicsAPI.Algorithms
 
         private ParamInfo[] _paramsInfo =
         [
-            new ParamInfo("C1", "C1 Parameter", 1.0, 2.0),
-            new ParamInfo("C2", "C2 Parameter", 2.0, 6.0),
-            new ParamInfo("C3", "C3 Parameter", 1.0, 2.0),
-            new ParamInfo("C4", "C4 Parameter", 0.5, 1.0)
+            new ParamInfo("C1", "Parametr C1, Zalecane wartości: {1.0, 2.0}", 1.0, 2.0),
+            new ParamInfo("C2", "Parametr C2, Zalecane wartości: {2.0, 4.0, 6.0}", 2.0, 6.0),
+            new ParamInfo("C3", "Parametr C3, Zalecane wartości: {1.0, 2.0}", 1.0, 2.0),
+            new ParamInfo("C4", "Parametr C4, Zalecane wartości: {0.5, 1.0}", 0.5, 1.0)
         ];
         public ParamInfo[] ParamsInfo { get => _paramsInfo; set => _paramsInfo = value; }
         IStateWriter IOptimizationAlgorithm.writer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         IStateReader IOptimizationAlgorithm.reader { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         IGenerateTextReport IOptimizationAlgorithm.stringReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         IGeneratePDFReport IOptimizationAlgorithm.pdfReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public void Solve(fitnessFunction f, double[,] domain, params double[]? parameters)
+        public void Solve(fitnessFunction f, double[][] domain, params double[]? parameters)
         {
             int dim = domain.GetLength(0);
             double[] lb = new double[dim];
             double[] ub = new double[dim];
             for (int i = 0; i < dim; i++)
             {
-                lb[i] = domain[i, 0];
-                ub[i] = domain[i, 1];
+                lb[i] = domain[i][0];
+                ub[i] = domain[i][1];
             }
-            if (parameters != null && parameters.Length == 4)
+            if (parameters != null)
             {
-                this.C1 = parameters[0];
-                this.C2 = parameters[1];
-                this.C3 = parameters[2];
-                this.C4 = parameters[3];
+                if (parameters.Length == 4)
+                {
+                    if (parameters[0] >= 1.0 && parameters[0] <= 2.0)
+                        this.C1 = parameters[0];
+                    else
+                        throw new ArgumentException("Archimedes optimization - incorrect parameter value for C1");
+
+                    if (parameters[1] >= 2.0 && parameters[1] <= 6.0)
+                        this.C2 = parameters[1];
+                    else
+                        throw new ArgumentException("Archimedes optimization - incorrect parameter value for C2");
+
+                    if (parameters[2] >= 1.0 && parameters[2] <= 2.0)
+                        this.C3 = parameters[2];
+                    else
+                        throw new ArgumentException("Archimedes optimization - incorrect parameter value for C3");
+
+                    if (parameters[3] >= 0.5 && parameters[3] <= 1.0)
+                        this.C4 = parameters[3];
+                    else
+                        throw new ArgumentException("Archimedes optimization - incorrect parameter value for C4");
+                }
+                else throw new ArgumentException("Archimedes optimization - incorrect values for parameters");
             }
             InitAlgroithm(dim, f, lb, ub);
             Compute();

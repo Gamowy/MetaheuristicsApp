@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace MetaheuristicsAPI
+namespace MetaheuristicsAPI.Payloads
 {
-    public class TestRequest
+    public record TestRequest
     {
-
         [Required]
         public required string Algorithm { get; set; }
         [Required]
@@ -16,9 +15,6 @@ namespace MetaheuristicsAPI
         public required string Fun { get; set; }
         [Required]
         public required int Dim { get; set; }
-
-        [DefaultValue(null)]
-        public double[,]? Domain { get; set; }
         [DefaultValue(null)]
         public double[]? Parameters { get; set; }
     }
