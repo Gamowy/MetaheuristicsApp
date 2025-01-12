@@ -1,4 +1,4 @@
-﻿namespace MetaheuristicsAPI.Payloads
+﻿namespace MetaheuristicsPlatform.Schemas
 {
     public record TestResults
     {

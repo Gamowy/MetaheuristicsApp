@@ -1,15 +1,121 @@
 @page "/test"
+@using MetaheuristicsPlatform.Schemas
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
 @rendermode InteractiveServer
+
 
 <PageTitle>Metaheurystyki - testowanie</PageTitle>
 
 <h1>Testowanie wybranego algorytmu</h1>
 <p class="lead">Przetestuj wybrany algorytm dla ustalonych parametrów i funkcji testowych</p>
 
-<Button Color="ButtonColor.Primary" class="mb-5" @onclick="Test"> Test </Button>
+<form>
+	<p class="text-center fs-3 ">Algorytm</p>
+	<div class="mb-3 border border-dark rounded p-3" id="formAlgorithm">
+		@if(algorithms != null) {
+			<div class="mb-3 form-floating">
+				<select class="form-select" id="algorithmSelect">
+					<option value="" selected disabled>Wybierz algorytm</option>
+					@foreach (var algorithm in algorithms) {
+						<option>@ToTitleCase(algorithm)</option>
+					}
+				</select>
+				<label for="algorithmSelect">Algorytm optymalizacyjny</label>
+			</div>
 
-@code {
-	static void Test() {
-		Console.WriteLine("Test");
+			<p class="fs-5 text-center">Parametry zewnętrzne</p>
+			<div class="row">
+				<div class="col">
+					<p class="text-center fw-bold">Ilość iteracji</p>
+				</div>
+				<div class="col">
+					<p class="text-center fw-bold">Rozmiar populacji</p>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<div class="mb-3">
+						<span class="form-text">Wartość początkowa</span>
+						<NumberInput TValue="int" @bind-Value="@minI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość początkową"/>
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Wartość końcowa</span>
+						<NumberInput TValue="int" @bind-Value="@maxI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość końcową"/>
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Krok</span>
+						<NumberInput TValue="int" @bind-Value="@stepI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź krok" />
+					</div>
+				</div>
+
+				<div class="col">
+					<div class="mb-3">
+						<span class="form-text">Wartość początkowa</span>
+						<NumberInput TValue="int" @bind-Value="@minN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość początkową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Wartość końcowa</span>
+						<NumberInput TValue="int" @bind-Value="@maxN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość końcową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Krok</span>
+						<NumberInput TValue="int" @bind-Value="@stepN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź krok" />
+					</div>
+				</div>
+			</div>
+
+			<p class="fs-5 text-center">Parametry wewnętrzne</p>
+
+		}
+		else {
+			<p class="text-center fs-5">Nie znaleziono algorytmów...</p>
+		}
+	</div>
+
+	<p class="text-center fs-3">Funkcja testowa</p>
+	<div class="mb-3 border border-dark p-3" id="formAlgorithm">
+		@if(fitnessFunctions != null) {
+			<div class="form-floating">
+				<select class="form-select" aria-label="Funkcja testowa">
+					<option value="" selected disabled>Wybierz funkcję testową</option>
+					@foreach (var function in fitnessFunctions)
+					{
+						<option>@ToTitleCase(function.FunctionName)</option>
+					}
+				</select>
+				<label for="floatingSelect">Funkcja testowa</label>
+			</div>
+		}
+		else {
+			<p class="text-center fs-5">Nie znaleziono funkcji testowych...</p>
+		}
+	</div>
+</form>
+
+@code 
+{
+	private string[]? algorithms;
+	private FitnessFunctionSchema[]? fitnessFunctions;
+
+	private int minN = 10, maxN = 40, stepN = 5;
+	private int minI = 10, maxI = 40, stepI = 5;
+
+	protected override async Task OnInitializedAsync() 
+	{
+		// Get algorithms
+		algorithms = await Http.GetFromJsonAsync<string[]>("algorithms");
+
+		// Get fitness functions
+		fitnessFunctions = await Http.GetFromJsonAsync<FitnessFunctionSchema[]>("functions");
 	}
-}    
+
+	private string ToTitleCase(string str) {
+		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+	}
+}

@@ -1,7 +1,7 @@
 using MetaheuristicsAPI;
 using MetaheuristicsAPI.FitnessFunctions;
 using MetaheuristicsAPI.Interfaces;
-using MetaheuristicsAPI.Payloads;
+using MetaheuristicsAPI.Schemas;
 
 
 var builder = WebApplication.CreateBuilder(args);

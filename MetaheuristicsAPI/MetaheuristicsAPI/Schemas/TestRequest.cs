@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace MetaheuristicsAPI.Payloads
+namespace MetaheuristicsAPI.Schemas
 {
     public record TestRequest
     {

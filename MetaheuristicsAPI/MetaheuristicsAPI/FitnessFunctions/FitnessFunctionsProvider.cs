@@ -1,20 +1,20 @@
 ﻿using MetaheuristicsAPI.Interfaces;
-using MetaheuristicsAPI.Payloads;
+using MetaheuristicsAPI.Schemas;
 
 namespace MetaheuristicsAPI.FitnessFunctions
 {
     public class FitnessFunctionsProvider
     {
-        public static FitnessFunctionPayload[] GetFitnessfunctionsPayloads()
+        public static FitnessFunctionSchema[] GetFitnessfunctionsPayloads()
         {
             return
             [
-                new FitnessFunctionPayload("rastrigin", true),
-                new FitnessFunctionPayload("rosenbrock", true),
-                new FitnessFunctionPayload("sphere", true),
-                new FitnessFunctionPayload("beale", false, [2]),
-                new FitnessFunctionPayload("bunkinn6", false, [2]),
-                new FitnessFunctionPayload("himmelblau", false, [2]),
+                new FitnessFunctionSchema("rastrigin", true),
+                new FitnessFunctionSchema("rosenbrock", true),
+                new FitnessFunctionSchema("sphere", true),
+                new FitnessFunctionSchema("beale", false, [2]),
+                new FitnessFunctionSchema("bunkinn6", false, [2]),
+                new FitnessFunctionSchema("himmelblau", false, [2]),
             ];
         }
 
