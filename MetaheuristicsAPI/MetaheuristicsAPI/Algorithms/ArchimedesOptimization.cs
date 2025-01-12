@@ -1,22 +1,101 @@
-﻿/* Archimedes Optimization Algorithm
-* Parametry zewnętrzne:
-* N - wielkość populacji
-* I - ilość iteracji
-* Dim - wymiar dziedziny funkcji testowej
-* Fun - funkcja testowa
-* Lb - tablica dolnych ograniczeń dziedziny funkcji testowej (jeżeli ograniczenie jest takie same dla każdej zmiennej to wystarczy podać jedno)
-* Ub - tablica górnych ograniczeń dziedziny funkcji testowej (jeżeli ograniczenie jest takie same dla każdej zmiennej to wystarczy podać jedno)
-* 
-* Domyślne wartości parametrów wewnętrznych:
-* C1 = 2.0
-* C2 = 6.0
-* C3 = 2.0
-* C4 = 0.5
-*/
+﻿using MetaheuristicsAPI.Interfaces;
+
 namespace MetaheuristicsAPI.Algorithms
 {
-    public class ArchimedesOptimization
+    public class ArchimedesOptimization : IOptimizationAlgorithm
     {
+        // number of objects and iterations
+        int N, I;
+
+        // parameters
+        public double C1 = 2.0, C2 = 6.0, C3 = 2.0, C4 = 0.5;
+
+        public ArchimedesOptimization(int numberOfObjects, int numberOfIteratons)
+        {
+            this.N = numberOfObjects;
+            this.I = numberOfIteratons;
+        }
+
+        #region IOptimizationAlgorithm implementation
+        private string _name = "Archimedes Optimization Algorithm";
+        public string Name
+        {
+            get => _name;
+            set => _name = value;
+        }
+
+        public double[] XBest
+        {
+            get => BestObject.x;
+            set { }
+        }
+
+        public double FBest
+        {
+            get => BestObject.FValue;
+            set { }
+        }
+
+        private int _numberOfEvaluationFitnessFunction = 0;
+        public int NumberOfEvaluationFitnessFunction
+        {
+            get => _numberOfEvaluationFitnessFunction;
+            set => _numberOfEvaluationFitnessFunction = value;
+        }
+
+        private ParamInfo[] _paramsInfo =
+        [
+            new ParamInfo("C1", "C1 Parameter", 1.0, 2.0),
+            new ParamInfo("C2", "C2 Parameter", 2.0, 6.0),
+            new ParamInfo("C3", "C3 Parameter", 1.0, 2.0),
+            new ParamInfo("C4", "C4 Parameter", 0.5, 1.0)
+        ];
+        public ParamInfo[] ParamsInfo { get => _paramsInfo; set => _paramsInfo = value; }
+        IStateWriter IOptimizationAlgorithm.writer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        IStateReader IOptimizationAlgorithm.reader { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        IGenerateTextReport IOptimizationAlgorithm.stringReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        IGeneratePDFReport IOptimizationAlgorithm.pdfReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public void Solve(fitnessFunction f, double[,] domain, params double[]? parameters)
+        {
+            int dim = domain.GetLength(0);
+            double[] lb = new double[dim];
+            double[] ub = new double[dim];
+            for (int i = 0; i < dim; i++)
+            {
+                lb[i] = domain[i, 0];
+                ub[i] = domain[i, 1];
+            }
+            if (parameters != null && parameters.Length == 4)
+            {
+                this.C1 = parameters[0];
+                this.C2 = parameters[1];
+                this.C3 = parameters[2];
+                this.C4 = parameters[3];
+            }
+            InitAlgroithm(dim, f, lb, ub);
+            Compute();
+        }
+        #endregion
+
+        #region Algorithm variables
+        // dimension of fitness function input
+        private int Dim = default;
+
+        // fitness function
+        private fitnessFunction Fun = null!;
+
+        // lower and upper bounds of fitness function for each dimension
+        private double[] Lb = null!;
+        private double[] Ub = null!;
+
+        // population of objects
+        private ImmersedObject[] ObjectPopulation = null!;
+
+        // best object
+        private ImmersedObject BestObject = null!;
+        #endregion
+
+        #region Helper methods 
         private class ImmersedObject
         {
             public double[] x;
@@ -39,58 +118,6 @@ namespace MetaheuristicsAPI.Algorithms
                     acc[i] = lb[i] + rand.NextDouble() * (ub[i] - lb[i]);
                 }
             }
-        }
-
-        // parameters
-        public double C1 = 2.0, C2 = 6.0, C3 = 2.0, C4 = 0.5;
-        // number of objects and iterations
-        int N, I;
-        // dimension of fitness function input
-        int Dim;
-        // fitness function
-        Func<double[], double> Fun;
-        // lower and upper bounds of fitness function for each dimension
-        double[] Lb, Ub;
-        // population of objects
-        ImmersedObject[] ObjectPopulation;
-        // best object
-        ImmersedObject BestObject;
-
-        public ArchimedesOptimization(int N, int I, int Dim, Func<double[], double> Fun, double[] Lb, double[] Ub)
-        {
-            this.N = N;
-            this.I = I;
-            this.Dim = Dim;
-            this.Fun = Fun;
-
-            if (Lb.Length == 1)
-            {
-                this.Lb = new double[Dim];
-                Array.Fill(this.Lb, Lb[0]);
-            }
-            else
-            {
-                this.Lb = Lb;
-            }
-            if (Ub.Length == 1)
-            {
-                this.Ub = new double[Dim];
-                Array.Fill(this.Ub, Ub[0]);
-            }
-            else
-            {
-                this.Ub = Ub;
-            }
-
-            // initalize new population with random values
-            ObjectPopulation = new ImmersedObject[N];
-            for (int j = 0; j < N; j++)
-            {
-                ObjectPopulation[j] = new ImmersedObject(Dim, this.Lb, this.Ub);
-                ObjectPopulation[j].FValue = Fun(ObjectPopulation[j].x);
-            }
-            BestObject = ObjectPopulation[0];
-            SelectBestObject();
         }
 
         // selects best object based on fitness function
@@ -131,36 +158,46 @@ namespace MetaheuristicsAPI.Algorithms
             double maxAcc = ObjectPopulation.Max(obj => obj.acc[index]);
             return 0.9 * ((acc - minAcc) / (maxAcc - minAcc)) + 0.1;
         }
+        #endregion
 
+        #region Algorithm
 
-        // IOptimizationAlgorithm implementation
-        private string _name = "Archimedes Optimization Algorithm";
-        public string Name
+        private void InitAlgroithm(int Dim, fitnessFunction Fun, double[] Lb, double[] Ub)
         {
-            get => _name;
-            set => _name = value;
+            this.Dim = Dim;
+            this.Fun = Fun;
+
+            if (Lb.Length == 1)
+            {
+                this.Lb = new double[Dim];
+                Array.Fill(this.Lb, Lb[0]);
+            }
+            else
+            {
+                this.Lb = Lb;
+            }
+            if (Ub.Length == 1)
+            {
+                this.Ub = new double[Dim];
+                Array.Fill(this.Ub, Ub[0]);
+            }
+            else
+            {
+                this.Ub = Ub;
+            }
+
+            // initalize new population with random values
+            ObjectPopulation = new ImmersedObject[N];
+            for (int j = 0; j < N; j++)
+            {
+                ObjectPopulation[j] = new ImmersedObject(Dim, this.Lb, this.Ub);
+                ObjectPopulation[j].FValue = Fun(ObjectPopulation[j].x);
+            }
+            BestObject = ObjectPopulation[0];
+            SelectBestObject();
         }
 
-        public double[] XBest
-        {
-            get => BestObject.x;
-            set { }
-        }
-
-        public double FBest
-        {
-            get => BestObject.FValue;
-            set { }
-        }
-
-        private int _numberOfEvaluationFitnessFunction = 0;
-        public int NumberOfEvaluationFitnessFunction
-        {
-            get => _numberOfEvaluationFitnessFunction;
-            set => _numberOfEvaluationFitnessFunction = value;
-        }
-
-        public double Solve()
+        private double Compute()
         {
             Random rand = new Random();
             int t = 1;
@@ -222,5 +259,6 @@ namespace MetaheuristicsAPI.Algorithms
             }
             return FBest;
         }
+        #endregion
     }
 }

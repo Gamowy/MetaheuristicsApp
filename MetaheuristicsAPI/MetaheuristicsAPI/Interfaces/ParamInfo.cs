@@ -2,8 +2,8 @@
 {
     public delegate double fitnessFunction(params double[] arg);
 
-    // opis pojedynczego parametru algorytmu , warto ść jest zmienn ą typu double
-    class ParamInfo
+    // opis pojedynczego parametru algorytmu , wartość jest zmienną typu double
+    public class ParamInfo
     {
         public string Name { get; private set; }
         public string Description { get; private set; }

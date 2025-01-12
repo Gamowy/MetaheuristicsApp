@@ -1,18 +1,18 @@
 ﻿namespace MetaheuristicsAPI.Interfaces
 {
-    interface IOptimizationAlgorithm
+    public interface IOptimizationAlgorithm
     {
         // Nazwa algorytmu
         string Name { get; set; }
 
-        // Metoda zaczynaj ąca rozwi ą zywanie zagadnienia poszukiwania minimum funkcji
+        // Metoda zaczynająca rozwiązywanie zagadnienia poszukiwania minimum funkcji
         // Jako argument przyjmuje :
         // funkcję celu ,
         // dziedzinę zadania w postaci tablicy 2D,
         // listę pozostałych wymaganych parametrów algorytmu ( tylko wartości , w kolejno
         // ści takiej jak w ParamsInfo ).
         // Po wykonaniu ustawia odpowiednie właściwości: XBest , Fbest , NumberOfEvaluationFitnessFunction
-        void Solve(fitnessFunction f, double[] domain, params double[] parameters);
+        void Solve(fitnessFunction f, double[,] domain, params double[]? parameters);
 
         // Lista informacji o kolejnych parametrach algorytmu
         ParamInfo[] ParamsInfo { get; set; }

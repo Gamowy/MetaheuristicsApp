@@ -1,6 +1,14 @@
-@MetaheuristicsAPI_HostAddress = http://localhost:5140
+@MetaheuristicsAPI_HostAddress = https://localhost:5111
 
-GET {{MetaheuristicsAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
+POST {{MetaheuristicsAPI_HostAddress}}/test
+Content-Type: application/json
+{
+  "algorithm": "aoa",
+  "n": 80,
+  "i": 80,
+  "fun": "rastrigin",
+  "dim": 2,
+  "domain": null,
+  "parameters": null
+}
 ###

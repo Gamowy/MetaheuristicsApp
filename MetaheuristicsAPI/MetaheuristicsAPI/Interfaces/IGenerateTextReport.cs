@@ -1,6 +1,6 @@
 ﻿namespace MetaheuristicsAPI.Interfaces
 {
-    interface IGenerateTextReport
+    public interface IGenerateTextReport
     {
 
         // Tworzy raport w postaciłań cucha znaków

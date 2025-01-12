@@ -1,6 +1,6 @@
 ﻿namespace MetaheuristicsAPI.Interfaces
 {
-    interface IGeneratePDFReport
+    public interface IGeneratePDFReport
     {
         // Tworzy raport w określonym stylu w formacie PDF
         // w raporcie powinny znaleźć się informacje o:
