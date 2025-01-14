@@ -1,8 +1,8 @@
-﻿namespace MetaheuristicsAPI.Interfaces
-{
+﻿namespace MetaheuristicsPlatform.Schemas 
+{ 
     public delegate double fitnessFunction(params double[] arg);
 
-    // opis pojedynczego parametru algorytmu , wartość jest zmienną typu double
+    // opis pojedynczego parametru algorytmu, wartość jest zmienną typu double
     public class ParamInfo
     {
         public string Name { get; set; } = "Parameter Name";
@@ -18,7 +18,7 @@
             LowerBoundary = lb;
             UpperBoundary = ub;
         }
-        
+
         public ParamInfo() { }
     }
 }
