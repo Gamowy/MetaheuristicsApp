@@ -24,13 +24,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRequestTimeouts();
 
-// Endpoint for retriving available algorithms
+// GET: returns available algorithm names
 app.MapGet("/algorithms", () => AlgorithmsProvider.GetAlgorithmNames())
 .WithName("GetAlgorithms")
 .WithDescription("Returns available algorithm names.")
 .WithOpenApi();
 
-// Endpoint for retriving algorithm parameters
+// GET: returns parameters for given algoritm
 app.MapGet("/algorithms/params/{algorithm}", (string algorithm) =>
 {
     IOptimizationAlgorithm? optimizationAlgorithm = AlgorithmsProvider.GetAlgorithm(algorithm, 0, 0);
@@ -44,42 +44,47 @@ app.MapGet("/algorithms/params/{algorithm}", (string algorithm) =>
 .Produces(StatusCodes.Status404NotFound)
 .WithOpenApi();
 
-// Endpoint for retriving available fitness functions with domain dimensions
-app.MapGet("/functions", () => FitnessFunctionsProvider.GetFitnessfunctionsPayloads())
+// GET: returns fitness function names with available dimensions
+app.MapGet("/functions", () => FitnessFunctionsProvider.GetFitnessfunctionsSchemas())
 .WithName("GetFitnessFunctions")
 .WithDescription("Returns available fitness function names and their domain dimensions.")
 .WithOpenApi();
 
-// Endpoint for testing a single algorithm
-app.MapPost("/test", async (TestRequest request) =>
+// POST: computes algorithm tests
+app.MapPost("/test", async (TestRequest[] requests) =>
 {
+    TestResults[] results = new TestResults[requests.Length];
     try
     {
-        IOptimizationAlgorithm? optimizationAlgorithm = AlgorithmsProvider.GetAlgorithm(request.Algorithm, request.N, request.I);
-        if (optimizationAlgorithm == null)
-            return Results.BadRequest("Specified algorithm doesn't exist");
-
-        fitnessFunction? fitnessFunction = FitnessFunctionsProvider.GetFitnessFunction(request.Fun);
-        if (fitnessFunction == null)
-            return Results.BadRequest("Specified fitness function doesn't exist");
-
-        double[][]? domain = FitnessFunctionsProvider.GetDomain(request.Fun, request.Dim);
-        if (domain == null)
-            return Results.BadRequest("Can't get domain for specified fitness function");
-
-        if (domain.GetLength(0) != request.Dim)
-            return Results.BadRequest("Incorect dimension for specified fitness function");
-
-        double[]? parameters = request.Parameters;
-
-        await Task.Run(() => optimizationAlgorithm.Solve(fitnessFunction, domain, request.Parameters));
-
-        TestResults results = new TestResults
+        for (int i = 0; i < requests.Length; i++)
         {
-            XBest = optimizationAlgorithm.XBest,
-            FBest = optimizationAlgorithm.FBest,
-            NumberOfEvaluationFitnessFunction = optimizationAlgorithm.NumberOfEvaluationFitnessFunction
-        };
+            IOptimizationAlgorithm? optimizationAlgorithm = AlgorithmsProvider.GetAlgorithm(requests[i].Algorithm, requests[i].N, requests[i].I);
+            if (optimizationAlgorithm == null)
+                return Results.BadRequest("Specified algorithm doesn't exist");
+
+            fitnessFunction? fitnessFunction = FitnessFunctionsProvider.GetFitnessFunction(requests[i].Fun);
+            if (fitnessFunction == null)
+                return Results.BadRequest("Specified fitness function doesn't exist");
+
+            double[][]? domain = FitnessFunctionsProvider.GetDomain(requests[i].Fun, requests[i].Dim);
+            if (domain == null)
+                return Results.BadRequest("Can't get domain for specified fitness function");
+
+            if (domain.GetLength(0) != requests[i].Dim)
+                return Results.BadRequest("Incorect dimension for specified fitness function");
+
+            double[]? parameters = requests[i].Parameters;
+
+            await Task.Run(() => optimizationAlgorithm.Solve(fitnessFunction, domain, requests[i].Parameters));
+
+            TestResults result = new TestResults
+            {
+                XBest = optimizationAlgorithm.XBest,
+                FBest = optimizationAlgorithm.FBest,
+                NumberOfEvaluationFitnessFunction = optimizationAlgorithm.NumberOfEvaluationFitnessFunction
+            };
+            results[i] = result;
+        }
         return Results.Ok(results);
     }
     catch (Exception ex)
@@ -88,10 +93,10 @@ app.MapPost("/test", async (TestRequest request) =>
     }
 })
 .WithName("PostTestRequest")
-.WithDescription("Posts request for testing a single algorithm on a given test function with specified parametrs and returns results.")
-.Produces<TestResults>(StatusCodes.Status200OK)
+.WithDescription("Posts request for computing algorithm tests on given test functions with specified parametrs.")
+.Produces<TestResults[]>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
-.WithRequestTimeout(TimeSpan.FromMinutes(5))
+.WithRequestTimeout(TimeSpan.FromMinutes(10))
 .WithOpenApi();
 
 app.Run();

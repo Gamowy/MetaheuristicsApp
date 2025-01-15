@@ -6,6 +6,7 @@
 @rendermode InteractiveServer
 
 <PageTitle>Metaheurystyki - testowanie</PageTitle>
+<ConfirmDialog @ref="dialog" />
 
 <h1>Testowanie wybranego algorytmu</h1>
 <p class="lead">Przetestuj wybrany algorytm dla ustalonych parametrów i funkcji testowych</p>
@@ -16,7 +17,7 @@
 		@if(algorithms != null) 
 		{
 			<div class="mb-3 form-floating">
-				<select class="form-select" id="algorithmSelect" @onchange="GetInnerParams">
+				<select class="form-select" id="algorithmSelect" @onchange="AlgorithmSelectionChanged">
 					<option value="" selected disabled>Wybierz algorytm</option>
 					@foreach (var algorithm in algorithms) 
 					{
@@ -80,11 +81,11 @@
 					<div class="row mb-3">
 						<div class="col">
 							<span class="form-text">@paramInfo[index].Description</span>
-							<input type="number" class="form-control" placeholder="@paramInfo[index].Name"
-							min="@paramInfo[index].LowerBoundary"
-							max="@paramInfo[index].UpperBoundary"
-							step="0.1"
-							@onchange="(ev) => SetInnerParamValue(index, ev)" />
+							<NumberInput TValue="double" @bind-Value="@parameters[index]" EnableMinMax="true" 
+							Min="@paramInfo[index].LowerBoundary"
+							Max="@paramInfo[index].UpperBoundary"
+							Step="0.1"
+							Placeholder="Wprowadź wartość parametru" />
 						</div>
 					</div>
 
@@ -92,47 +93,71 @@
 			}
 			else
 			{
-				<p class="text-center">Nie znaleziono parametrów wewnętrznych</p>
+				<p class="mb-3 text-center">Nie znaleziono parametrów wewnętrznych</p>
 			}
 		}
 		else 
 		{
-			<p class="text-center fs-5">Nie znaleziono algorytmów...</p>
+			<p class="mb-3 text-center fs-5">Nie znaleziono algorytmów...</p>
 		}
 	</div>
 
-	<p class="text-center fs-3">Funkcja testowa</p>
+	<p class="text-center fs-3">Funkcje testowe</p>
 	<div class="mb-3 border border-dark p-3" id="formAlgorithm">
 		@if(fitnessFunctions != null) 
 		{
-			<div class="form-floating">
-				<select class="form-select" aria-label="Funkcja testowa">
-					<option value="" selected disabled>Wybierz funkcję testową</option>
-					@foreach (var function in fitnessFunctions)
-					{
-						<option value="@function.FunctionName">@ToTitleCase(function.FunctionName)</option>
-					}
-				</select>
-				<label for="floatingSelect">Funkcja testowa</label>
-			</div>
+			<p class="fs-5 text-center">Dostępne funkcje</p>
+			@foreach (var function in fitnessFunctions)
+			{
+				<div class="mb-3 form-check">
+					<input class="form-check-input" type="checkbox" @oninput="(ev) => FitnessFunctionCheckBoxPressed(ev, function.FunctionName)" />
+					<label class="form-check-label">@ToTitleCase(function.FunctionName)</label>
+				</div>
+			}
+
+
+			<p class="fs-5 text-center">Liczba szukanych parametrów</p>
+			<span class="form-text">Maksymalna liczba szukanych parametrów</span>
+			<NumberInput class="mb-3" TValue="int" @bind-Value="selectedDim" EnableMinMax="true" Min="1" Max="100" Placeholder="Wprowadź liczbę szukanych parametrów" />
 		}
 		else 
 		{
-			<p class="text-center fs-5">Nie znaleziono funkcji testowych...</p>
+			<p class="mb-3 text-center fs-5">Nie znaleziono funkcji testowych...</p>
 		}
+	</div>
+	<div class="mb-3 row text-center">
+		<div class="col ">
+			<Button id="launchTestButton" class="d-flex mx-auto justify-content-center" Color="ButtonColor.Primary" @onclick="ShowConfirmationDialog" Size="ButtonSize.Large"
+			LoadingText="&nbsp&nbspGenerowanie raportu..." Disabled="@isButtonDisabled" Loading="@isTestLaunched">
+				<span class="text">Uruchom test</span>
+			</Button>
+		</div>
 	</div>
 </form>
 
 @code 
 {
 	private string[]? algorithms;
-	private FitnessFunctionSchema[]? fitnessFunctions;
 	private ParamInfo[]? paramInfo;
-	private int parametersIndexer = 0;
 	private double[]? parameters;
+
+	private FitnessFunctionSchema[]? fitnessFunctions;
+	private bool allowAnyDims;
+	private int[]? allowedDims;
+
+
+	private string? selectedAlgorithm;
+	private List<string> selectedFitnessFunctions = new List<string>();
+	private int selectedDim = 2;
 
 	private int minN = 10, maxN = 40, stepN = 5;
 	private int minI = 10, maxI = 40, stepI = 5;
+
+
+	private ConfirmDialog dialog = default!;
+	private bool isTestLaunched;
+	private bool isButtonDisabled { get => (selectedAlgorithm == null || selectedFitnessFunctions.Count == 0 || isTestLaunched) ? true : false; }
+
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -160,8 +185,18 @@
 	}
 
 	// Called when selected algorithm changes
-	private async void GetInnerParams(ChangeEventArgs ev) {
+	private async Task AlgorithmSelectionChanged(ChangeEventArgs ev) 
+	{
 		string algorithmName = ev?.Value?.ToString() ?? "";
+		paramInfo = null;
+		parameters = null;
+		selectedAlgorithm = algorithmName;
+		await ShowInnerParams(algorithmName);
+		StateHasChanged();
+	}
+
+	private async Task ShowInnerParams(string algorithmName) 
+	{
 		try
 		{
 			paramInfo = await Http.GetFromJsonAsync<ParamInfo[]>($"algorithms/params/{algorithmName}");
@@ -170,28 +205,52 @@
 				parameters = new double[paramInfo.Length];
 			}
 		}
-		catch (HttpRequestException e) {
-			paramInfo = null;
-			parameters = null;
+		catch (HttpRequestException e)
+		{
 			Console.WriteLine("Failed to fetch algorithm inner parameters: " + e.Message);
 		}
-		StateHasChanged();
 	}
 
-	private void SetInnerParamValue(int i, ChangeEventArgs ev) {
-		Console.WriteLine(i);
-		if (paramInfo != null && parameters != null)
+	// Called when fitness function checkbox pressed
+	private void FitnessFunctionCheckBoxPressed(ChangeEventArgs ev, string functionName) 
+	{
+		if(!selectedFitnessFunctions.Contains(functionName))
 		{
-			try {
-				parameters[i] = Convert.ToDouble(ev.Value);
-			}
-			catch {
-				parameters[i] = paramInfo[i].LowerBoundary;
-			}
+			selectedFitnessFunctions.Add(functionName);
+		}
+		else 
+		{
+			selectedFitnessFunctions.Remove(functionName);
 		}
 	}
 
-	private string ToTitleCase(string str) {
-		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
+	private async Task ShowConfirmationDialog() 
+	{
+		var confirmation = await dialog.ShowAsync(
+			title: "Test algorytmu",
+			message1: $"Wybrany algorytm: {ToTitleCase(selectedAlgorithm)}",
+			message2: $"Przetestować algorytm dla wybranych parametrów i funkcji testowych?"
+		);
+
+		if (confirmation) 
+		{
+			isTestLaunched = true;
+			StateHasChanged();
+
+			await LaunchTest();
+			
+			isTestLaunched = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task LaunchTest() 
+	{
+		await Task.Delay(TimeSpan.FromSeconds(30));
+	}
+
+	private string ToTitleCase(string? str) 
+	{
+		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str ?? "");
 	}
 }

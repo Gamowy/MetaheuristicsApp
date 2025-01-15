@@ -5,7 +5,7 @@ namespace MetaheuristicsAPI.FitnessFunctions
 {
     public class FitnessFunctionsProvider
     {
-        public static FitnessFunctionSchema[] GetFitnessfunctionsPayloads()
+        public static FitnessFunctionSchema[] GetFitnessfunctionsSchemas()
         {
             return
             [
