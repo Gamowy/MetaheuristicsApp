@@ -135,6 +135,21 @@
 	</div>
 </form>
 
+
+@if (results != null)
+{
+	@for (int i = 0; i < results.Length; i++)
+	{
+		int index = i + 1;
+		<div class="mb-3">
+			<p>Test nr. @index</p>
+			<p>Algorytm: @results[i].AlgorithmName, Funkcja testowa: @results[i].FunctionName</p>
+			<p>Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
+			<p>XBest: @string.Join(", ", results[i].XBest), Fbest: @results[i].FBest</p>
+		</div>
+	}
+}
+
 @code 
 {
 	private string[]? algorithms;
@@ -142,22 +157,19 @@
 	private double[]? parameters;
 
 	private FitnessFunctionSchema[]? fitnessFunctions;
-	private bool allowAnyDims;
-	private int[]? allowedDims;
-
 
 	private string? selectedAlgorithm;
 	private List<string> selectedFitnessFunctions = new List<string>();
 	private int selectedDim = 2;
 
-	private int minN = 10, maxN = 40, stepN = 5;
-	private int minI = 10, maxI = 40, stepI = 5;
+	private int minN = 10, maxN = 40, stepN = 10;
+	private int minI = 10, maxI = 40, stepI = 10;
 
 
+	TestResults[]? results;
 	private ConfirmDialog dialog = default!;
 	private bool isTestLaunched;
 	private bool isButtonDisabled { get => (selectedAlgorithm == null || selectedFitnessFunctions.Count == 0 || isTestLaunched) ? true : false; }
-
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -238,15 +250,58 @@
 			StateHasChanged();
 
 			await LaunchTest();
-			
+
 			isTestLaunched = false;
 			StateHasChanged();
 		}
 	}
 
+	private TestRequest[] PrepareTestRequests() 
+	{
+		List<TestRequest> testRequests = new List<TestRequest>();
+		if (selectedAlgorithm != null && fitnessFunctions != null)
+		{
+			foreach (var function in fitnessFunctions)
+			{
+				if (selectedFitnessFunctions.Contains(function.FunctionName))
+				{
+					int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ? selectedDim : function.Dims!.Max();
+
+					for (int objects = minN; objects <= maxN; objects += stepN)
+					{
+						for (int iterations = minI; iterations <= maxI; iterations += stepI)
+						{
+							testRequests.Add(
+								new TestRequest
+									{
+										Algorithm = selectedAlgorithm,
+										N = objects,
+										I = iterations,
+										Fun = function.FunctionName,
+										Dim = dim,
+										Parameters = parameters
+									}
+							);
+						}
+					}
+				}
+			}
+		}
+		return testRequests.ToArray();
+	}
+
 	private async Task LaunchTest() 
 	{
-		await Task.Delay(TimeSpan.FromSeconds(30));
+		try
+		{
+			TestRequest[] requests = PrepareTestRequests();
+			var response = await Http.PostAsJsonAsync("/test", requests);
+			results = await response.Content.ReadFromJsonAsync<TestResults[]>();
+		}
+		catch (Exception e) 
+		{
+			Console.WriteLine("Failed to launch new test: " + e.Message);
+		}
 	}
 
 	private string ToTitleCase(string? str) 

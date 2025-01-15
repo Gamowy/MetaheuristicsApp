@@ -79,6 +79,8 @@ app.MapPost("/test", async (TestRequest[] requests) =>
 
             TestResults result = new TestResults
             {
+                AlgorithmName = optimizationAlgorithm.Name,
+                FunctionName = requests[i].Fun,
                 XBest = optimizationAlgorithm.XBest,
                 FBest = optimizationAlgorithm.FBest,
                 NumberOfEvaluationFitnessFunction = optimizationAlgorithm.NumberOfEvaluationFitnessFunction
