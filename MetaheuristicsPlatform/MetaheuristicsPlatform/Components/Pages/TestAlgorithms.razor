@@ -45,7 +45,7 @@
 
 					<div class="mb-3">
 						<span class="form-text">Wartość końcowa</span>
-						<NumberInput TValue="int" @bind-Value="@maxI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość końcową"/>
+						<NumberInput TValue="int" @bind-Value="@maxI" EnableMinMax="true" Min="@minI" Max="10000" Placeholder="Wprowadź wartość końcową"/>
 					</div>
 
 					<div class="mb-3">
@@ -62,7 +62,7 @@
 
 					<div class="mb-3">
 						<span class="form-text">Wartość końcowa</span>
-						<NumberInput TValue="int" @bind-Value="@maxN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość końcową" />
+						<NumberInput TValue="int" @bind-Value="@maxN" EnableMinMax="true" Min="@minN" Max="10000" Placeholder="Wprowadź wartość końcową" />
 					</div>
 
 					<div class="mb-3">
@@ -138,16 +138,65 @@
 
 @if (results != null)
 {
-	@for (int i = 0; i < results.Length; i++)
-	{
-		int index = i + 1;
-		<div class="mb-3">
-			<p>Test nr. @index</p>
-			<p>Algorytm: @results[i].AlgorithmName, Funkcja testowa: @results[i].FunctionName</p>
-			<p>Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
-			<p>XBest: @string.Join(", ", results[i].XBest), Fbest: @results[i].FBest</p>
-		</div>
-	}
+	<Accordion class="mb-3">
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.FileTypeTxt" Class="me-1"/>
+				Rezultaty testów - txt
+			</TitleTemplate>
+			<Content>
+				<div class="overflow-auto" style="height: 600px">
+					@for (int i = 0; i < results.Length; i++)
+					{
+						int index = i + 1;
+						<div class="mb-3">
+							<p class="mb-2"><span class="lead">Test nr. @index</span></p>
+							<p class="mb-2"><span class="text-decoration-underline">Algorytm</span>: @ToTitleCase(results[i].AlgorithmName)</p>
+							<p class="mb-2"><span class="text-decoration-underline">Funkcja testowa</span>: @ToTitleCase(results[i].FunctionName)</p>
+							<p class="mb-2">Ilość iteracji @results[i].I</p>
+							<p class="mb-2">Rozmiar populacji: @results[i].N</p>
+							<p class="mb-2">Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
+							<p class="mb-2"><span class="fw-bold">XBest</span>: (@string.Join(", ", results[i].XBest))</p>
+							<p class="mb-2"><span class="fw-bold">Fbest</span>: @results[i].FBest</p>
+						</div>
+					}
+				</div>
+			</Content>
+		</AccordionItem>
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.FileTypePdf" Class="me-1"/>
+				Rezultaty testów - pdf
+			</TitleTemplate>
+			<Content>
+				Pdf
+			</Content>
+		</AccordionItem>
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.BarChartLine" Class="me-1"/>
+				Rezultaty testów - wykresy
+			</TitleTemplate>
+			<Content>
+				@if (iterationChart != null) 
+				{
+					string title = $"Wartość funkcji celu w zależności od liczby iteracji (N = {minN})";
+					<div class="mb-3 overflow-auto">
+						<TestLineChart chartData="@iterationChart" title="@title" 
+						xLabel="Ilość iteracji" yLabel="Wartość funkcji celu"/>
+					</div>
+				}
+				@if (populationChart != null)
+				{
+					string title = $"Wartość funkcji celu w zależności od rozmiaru populacji (I = {minI})";
+					<div class="mb-3 overflow-auto">
+						<TestLineChart chartData="@populationChart" title="@title"
+						xLabel="Rozmiar populacji" yLabel="Wartość funkcji celu" />
+					</div>
+				}
+			</Content>
+		</AccordionItem>
+	</Accordion>
 }
 
 @code 
@@ -165,11 +214,15 @@
 	private int minN = 10, maxN = 40, stepN = 10;
 	private int minI = 10, maxI = 40, stepI = 10;
 
-
+	TestLineChart? chart { get; set; }
 	TestResults[]? results;
 	private ConfirmDialog dialog = default!;
 	private bool isTestLaunched;
 	private bool isButtonDisabled { get => (selectedAlgorithm == null || selectedFitnessFunctions.Count == 0 || isTestLaunched) ? true : false; }
+
+	private ChartData? iterationChart;
+	private ChartData? populationChart;
+	private ChartData? numberOfEvaluationFitnessfunctionChart;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -236,26 +289,6 @@
 		}
 	}
 
-	private async Task ShowConfirmationDialog() 
-	{
-		var confirmation = await dialog.ShowAsync(
-			title: "Test algorytmu",
-			message1: $"Wybrany algorytm: {ToTitleCase(selectedAlgorithm)}",
-			message2: $"Przetestować algorytm dla wybranych parametrów i funkcji testowych?"
-		);
-
-		if (confirmation) 
-		{
-			isTestLaunched = true;
-			StateHasChanged();
-
-			await LaunchTest();
-
-			isTestLaunched = false;
-			StateHasChanged();
-		}
-	}
-
 	private TestRequest[] PrepareTestRequests() 
 	{
 		List<TestRequest> testRequests = new List<TestRequest>();
@@ -265,7 +298,8 @@
 			{
 				if (selectedFitnessFunctions.Contains(function.FunctionName))
 				{
-					int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ? selectedDim : function.Dims!.Max();
+					int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ? 
+						selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
 
 					for (int objects = minN; objects <= maxN; objects += stepN)
 					{
@@ -290,6 +324,31 @@
 		return testRequests.ToArray();
 	}
 
+	private async Task ShowConfirmationDialog()
+	{
+		var confirmation = await dialog.ShowAsync(
+			title: "Test algorytmu",
+			message1: $"Wybrany algorytm: {ToTitleCase(selectedAlgorithm)}",
+			message2: $"Przetestować algorytm dla wybranych parametrów i funkcji testowych?"
+		);
+
+		if (confirmation)
+		{
+			isTestLaunched = true;
+			StateHasChanged();
+
+			await LaunchTest();
+			await Task.Run(() =>
+			{
+				CreateChartsForIterations(minN);
+				CreateChartsForPopulation(minI);
+			});
+
+			isTestLaunched = false;
+			StateHasChanged();
+		}
+	}
+
 	private async Task LaunchTest() 
 	{
 		try
@@ -304,6 +363,79 @@
 		}
 	}
 
+
+	private void CreateChartsForIterations(int N) 
+	{
+		if (results != null && fitnessFunctions != null)
+		{
+			var datasets = new List<IChartDataset>();
+			var labels = new List<string>();
+			labels = results.Select(results => results.I.ToString()).Distinct().ToList();
+			
+			for (int i = 0; i < fitnessFunctions.Length; i++) 
+			{
+				var color = ColorUtility.CategoricalTwelveColors[i % 12].ToColor().ToRgbString();
+
+				var querry = from result in results 
+								where (result.FunctionName == fitnessFunctions[i].FunctionName && result.N == N) 
+								select result;
+				var data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
+				
+				if (data.Count > 0) 
+				{
+					datasets.Add(
+						new LineChartDataset 
+						{
+						Label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}",
+						Data = data,
+						BackgroundColor = color,
+						BorderColor = color,
+						PointRadius = new List<double> { 5 },
+						PointHoverRadius = new List<double> { 8 }
+						}
+					);
+				}
+			}
+			iterationChart =  new ChartData { Labels = labels, Datasets = datasets };
+		}
+	}
+
+	private void CreateChartsForPopulation(int I)
+	{
+		if (results != null && fitnessFunctions != null)
+		{
+			var datasets = new List<IChartDataset>();
+			var labels = new List<string>();
+			labels = results.Select(results => results.N.ToString()).Distinct().ToList();
+			
+			for (int i = 0; i < fitnessFunctions.Length; i++)
+			{
+				var color = ColorUtility.CategoricalTwelveColors[i % 12].ToColor().ToRgbString();
+
+				var querry = from result in results
+								where (result.FunctionName == fitnessFunctions[i].FunctionName && result.I == I)
+								select result;
+				var data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
+
+				if (data.Count > 0) 
+				{
+					datasets.Add(
+						new LineChartDataset
+						{
+							Label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}",
+							Data = data,
+							BackgroundColor = color,
+							BorderColor = color,
+							PointRadius = new List<double> { 5 },
+							PointHoverRadius = new List<double> { 8 }
+						}
+					);
+				}
+			}
+			populationChart = new ChartData { Labels = labels, Datasets = datasets };
+		}
+	}
+ 
 	private string ToTitleCase(string? str) 
 	{
 		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str ?? "");

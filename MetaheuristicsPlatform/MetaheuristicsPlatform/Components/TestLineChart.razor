@@ -1,0 +1,55 @@
+﻿@using MetaheuristicsPlatform.Schemas
+
+<div class="container-fluid overflow-x-auto" >
+    <LineChart @ref="lineChart" Width="1200" />
+</div>
+
+@code {
+    [Parameter]
+    public string title { get; set; } = default!;
+    [Parameter]
+    public string xLabel { get; set; } = default!;
+    [Parameter]
+    public string yLabel { get; set; } = default!;
+    [Parameter]
+    public ChartData chartData { get; set; } = default!;
+
+
+    private LineChart lineChart = default!;
+    private LineChartOptions lineChartOptions = default!;
+
+    private int datasetsCount;
+    private int labelsCount;
+
+    private Random random = new();
+
+    protected override void OnInitialized()
+    {
+        lineChartOptions = new()
+            {
+                IndexAxis = "x",
+                Interaction = new Interaction { Mode = InteractionMode.Index, Intersect = false },
+                Responsive = true
+            };
+
+        lineChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = xLabel, Display = true };
+        lineChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = yLabel, Display = true };
+        lineChartOptions.Plugins.Title!.Text = title;
+        lineChartOptions.Plugins.Title.Display = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await lineChart.InitializeAsync(chartData, lineChartOptions);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async void OnParametersSet() {
+        if (lineChart != null) {
+            await lineChart.UpdateValuesAsync(chartData);
+        }
+    }
+}
