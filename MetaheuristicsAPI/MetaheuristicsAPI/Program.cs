@@ -1,10 +1,10 @@
 using MetaheuristicsAPI;
-using MetaheuristicsAPI.Data;
+using MetaheuristicsAPI.FileHadlers;
+using MetaheuristicsAPI.FileHandlers;
 using MetaheuristicsAPI.FitnessFunctions;
 using MetaheuristicsAPI.Interfaces;
 using MetaheuristicsAPI.Schemas;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.FileProviders;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddRequestTimeouts();
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
@@ -23,8 +25,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
-// Configure File Server for hosting reports
+// Configure file hosting
 var rootPath = $"{Directory.GetCurrentDirectory()}/wwwroot";
 var txtReportsPath = $"{rootPath}/data/txtReports";
 var pdfReportsPath = $"{rootPath}/data/pdfReports";
@@ -134,7 +135,9 @@ app.MapPost("/test", async (TestRequest[] requests) =>
             results[i] = result;
         }
         TextFileReportWriter txtWriter = new TextFileReportWriter(results, rootPath);
+        PdfFileReportWriter pdfWriter = new PdfFileReportWriter(results, rootPath);
         txtWriter.WriteTxt();
+        pdfWriter.GenerateReport();
         return Results.Ok(results);
     }
     catch (Exception ex)

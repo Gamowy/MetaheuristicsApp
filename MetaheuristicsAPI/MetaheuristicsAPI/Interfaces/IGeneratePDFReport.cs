@@ -7,6 +7,6 @@
         // najlepszym osobniku wraz z wartością funkcji celu ,
         // liczbie wywołań funkcji celu ,
         // parametrach algorytmu
-        void GenerateRport(string path);
+        void GenerateReport();
     }
 }

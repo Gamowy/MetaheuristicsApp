@@ -2,7 +2,7 @@
 using MetaheuristicsAPI.Schemas;
 
 
-namespace MetaheuristicsAPI.Data
+namespace MetaheuristicsAPI.FileHadlers
 {
     public class TextFileReportWriter : IGenerateTextReport
     {
@@ -34,6 +34,7 @@ namespace MetaheuristicsAPI.Data
         public void WriteTxt()
         {
             // Write report string
+            fileIndex++;
             _reportString += $"Raport nr. {fileIndex}, Data raportu: {DateTime.Now}\r\n\r\n";
             for (int i = 0; i < results.Length; i++)
             {
@@ -42,7 +43,7 @@ namespace MetaheuristicsAPI.Data
                 _reportString += $"Funkcja testowa: {ToTitleCase(results[i].FunctionName)}\r\n";
                 _reportString += $"Ilość iteracji: {results[i].I}\r\n";
                 _reportString += $"Rozmiar populacji: {results[i].N}\r\n";
-                _reportString += $"Ilość wywołań funkcji testowej: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
+                _reportString += $"Ilość wywołań funkcji: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
                 _reportString += $"XBest: {string.Join(", ", results[i].XBest)}\r\n";
                 _reportString += $"FBest: {results[i].FBest}\r\n\r\n";
             }
@@ -52,7 +53,6 @@ namespace MetaheuristicsAPI.Data
             {
                 writer.WriteLine(_reportString);
             };
-            fileIndex++;
             File.WriteAllText(indexFilePath, fileIndex.ToString());
         }
 
