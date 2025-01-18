@@ -47,7 +47,7 @@ namespace MetaheuristicsAPI.Data
                 _reportString += $"FBest: {results[i].FBest}\r\n\r\n";
             }
 
-            var savePath = Path.Combine(path, $"Report{fileIndex}-{DateTime.Now:yyyy-MM-dd}.txt");
+            var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd}.txt");
             using (StreamWriter writer = File.CreateText(savePath))
             {
                 writer.WriteLine(_reportString);

@@ -1,0 +1,137 @@
+@page "/reports"
+@using MetaheuristicsPlatform.Schemas
+@using System.Text.RegularExpressions
+@inject HttpClient Http
+
+<PageTitle>Metaheurystyki - raporty</PageTitle>
+
+<h1>Raporty z testów</h1>
+<p class="lead">Raporty z przeprowadzonych testów</p>
+
+<p class="text-center fs-3 ">Raporty txt</p>
+@if (response != null)
+{
+	if(txtReports != null)
+	{
+		<table class="mb-5 table">
+			<thead>
+				<tr>
+					<th>Lp.</th>
+					<th>Data raportu</th>
+					<th>Plik z raportem (.txt)</th>
+				</tr>
+			</thead>
+			<tbody>
+				@for (int i = 0; i < txtReports.Length; i++)
+				{
+					int lp = i + 1;
+					string txtHref = $"{Http.BaseAddress!}data/txtReports/{txtReports[i].Report}";
+					<tr>
+						<td>@lp</td>
+						<td>@txtReports[i].Date.ToShortDateString()</td>
+						<td><a href="@txtHref" download="@txtReports[i].Report">@txtReports[i].Report</a></td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else
+	{
+		<p class="mb-3 text-center fs-5">Brak raportów pdf</p>
+	}
+	<p class="text-center fs-3 ">Raporty pdf</p>
+	@if (pdfReports != null) {
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Lp.</th>
+					<th>Data raportu</th>
+					<th>Plik z raportem (.pdf)</th>
+				</tr>
+			</thead>
+			<tbody>
+				@for (int i = 0; i < pdfReports.Length; i++)
+				{
+					int lp = i + 1;
+					string txtHref = $"{Http.BaseAddress!}data/pdfReports/{pdfReports[i].Report}";
+					<tr>
+						<td>@lp</td>
+						<td>@pdfReports[i].Date.ToShortDateString()</td>
+						<td><a href="@txtHref" download="@pdfReports[i].Report">@pdfReports[i].Report</a></td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else {
+		<p class="mb-3 text-center fs-5">Brak raportów pdf</p>
+	}
+}
+else {
+	<p class="mb-3 text-center fs-4">Nie znaleziono żadnych raportów</p>
+}
+
+@code 
+{
+	private struct ReportAndDate {
+		public string Report;
+		public DateTime Date;
+	}
+	private Regex dateRegex = new Regex(@"\d{4}\-\d{2}\-\d{2}");
+	private ReportPaths? response;
+	private ReportAndDate[]? txtReports;
+	private ReportAndDate[]? pdfReports;
+
+	protected override async Task OnInitializedAsync() 
+	{
+		// Get txt reports download paths
+		try 
+		{
+			response = await Http.GetFromJsonAsync<ReportPaths>("reports/paths");
+			if (response != null) 
+			{
+				if (response.TxtPaths.Length > 0) {
+					txtReports = new ReportAndDate[response.TxtPaths.Length];
+					for (int i = 0; i < response.TxtPaths.Length; i++) 
+					{
+						Match match = dateRegex.Match(response.TxtPaths[i]);
+						if (match.Success)
+						{
+							txtReports[i] = new ReportAndDate()
+								{
+									Report = response.TxtPaths[i],
+									Date = DateTime.Parse(match.Value)
+								};
+
+						}
+					}
+					txtReports = txtReports.OrderByDescending(x => x.Date).ThenBy(x => x.Report).ToArray();
+				}
+				if (response.PdfPaths.Length > 0)
+				{
+					pdfReports = new ReportAndDate[response.PdfPaths.Length];
+					for (int i = 0; i < response.PdfPaths.Length; i++)
+					{
+						Match match = dateRegex.Match(response.PdfPaths[i]);
+						if (match.Success)
+						{
+							pdfReports[i] = new ReportAndDate()
+								{
+									Report = response.PdfPaths[i],
+									Date = DateTime.Parse(match.Value)
+								};
+						}
+					}
+					pdfReports = pdfReports.OrderByDescending(x => x.Date).ThenBy(x => x.Report).ToArray();
+				}
+			}
+		}
+		catch (HttpRequestException e) 
+		{
+			response = null;
+			txtReports = null;
+			pdfReports = null;
+			Console.WriteLine("Failed to fetch reports: " + e.Message);
+		}
+	}
+}

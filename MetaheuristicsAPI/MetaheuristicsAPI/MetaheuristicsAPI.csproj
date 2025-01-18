@@ -13,13 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\data\txtReports\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\data\txtReportsIndex.txt" />
-    <None Include="wwwroot\data\txtReports\Report0-2025-01-18.txt" />
-    <None Include="wwwroot\data\txtReports\Report1-2025-01-18.txt" />
+    <Folder Include="wwwroot\" />
+    <Folder Include="wwwroot\data\pdfReports\" />
   </ItemGroup>
 
 </Project>

@@ -27,17 +27,16 @@ if (app.Environment.IsDevelopment())
 // Configure File Server for hosting reports
 var rootPath = $"{Directory.GetCurrentDirectory()}/wwwroot";
 var txtReportsPath = $"{rootPath}/data/txtReports";
+var pdfReportsPath = $"{rootPath}/data/pdfReports";
 if (!Directory.Exists(txtReportsPath))
 {
     Directory.CreateDirectory(txtReportsPath);
 }
-app.UseStaticFiles();
-/*app.UseStaticFiles(new StaticFileOptions()
+if (!Directory.Exists(pdfReportsPath))
 {
-    FileProvider = new PhysicalFileProvider(txtReportsfullPath),
-    RequestPath = txtReportsPath
-});*/
-
+    Directory.CreateDirectory(pdfReportsPath);
+}
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRequestTimeouts();
 
@@ -68,13 +67,18 @@ app.MapGet("/functions", () => FitnessFunctionsProvider.GetFitnessfunctionsSchem
 .WithDescription("Returns available fitness function names and their domain dimensions.")
 .WithOpenApi();
 
-// GET: returns paths to txt reports
-app.MapGet("reports/txt", () =>
+// GET: returns paths to reports
+app.MapGet("reports/paths", () =>
 {
-    if (Directory.Exists(txtReportsPath))
+    if (Directory.Exists(txtReportsPath) && Directory.Exists(pdfReportsPath))
     {
-        Console.WriteLine(txtReportsPath);
-        string[] paths = Directory.GetFiles(txtReportsPath).Select(path => Path.GetFileName(path)).ToArray();
+        string[] txtPaths = Directory.GetFiles(txtReportsPath).Select(path => Path.GetFileName(path)).ToArray();
+        string[] pdfPaths = Directory.GetFiles(pdfReportsPath).Select(path => Path.GetFileName(path)).ToArray();
+        ReportPaths paths = new ReportPaths
+        {
+            TxtPaths = txtPaths,
+            PdfPaths = pdfPaths
+        };
         return Results.Ok(paths);
     }
     else
@@ -85,8 +89,8 @@ app.MapGet("reports/txt", () =>
 
 })
 .WithName("GetTxtReports")
-.WithDescription("Returns paths to txt reports stored on the server.")
-.Produces<string[]>(StatusCodes.Status200OK)
+.WithDescription("Returns paths to reports stored on the server.")
+.Produces<ReportPaths[]>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status404NotFound)
 .WithOpenApi();
 
