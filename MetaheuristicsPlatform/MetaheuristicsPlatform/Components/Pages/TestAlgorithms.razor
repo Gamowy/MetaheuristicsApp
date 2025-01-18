@@ -138,6 +138,9 @@
 
 @if (results != null)
 {
+	<div class="alert alert-success" role="alert">
+		Pomyślnie wygenerowano raport z testów!
+	</div>
 	<Accordion class="mb-3">
 		<AccordionItem>
 			<TitleTemplate>
@@ -194,9 +197,31 @@
 						xLabel="Rozmiar populacji" yLabel="Wartość funkcji celu" />
 					</div>
 				}
+				@if (fitnessEvaluationIterationChart != null)
+				{
+					string title = $"Liczba wywołań funkcji celu w zależności od ilości iteracji (N = {minN})";
+					<div class="mb-3 overflow-auto">
+						<TestLineChart chartData="@fitnessEvaluationIterationChart" title="@title"
+						xLabel="Ilość iteracji" yLabel="Liczba wywołań funkcji celu" />
+					</div>
+				}
+				@if (fitnessEvaluationPopulationChart != null)
+				{
+					string title = $"Liczba wywołań funkcji celu w zależności od rozmiaru populacji (I = {minI})";
+					<div class="mb-3 overflow-auto">
+						<TestLineChart chartData="@fitnessEvaluationPopulationChart" title="@title"
+						xLabel="Rozmiar populacji" yLabel="Liczba wywołań funkcji celu" />
+					</div>
+				}
 			</Content>
 		</AccordionItem>
 	</Accordion>
+}
+else if (testFail) {
+	<div class="alert alert-danger" role="alert">
+		Niepowodzenie podczas wykonywania testów!<br />
+		Sprawdź połączenie internetowe oraz poprawnośc wprowadzonych parametrów.
+	</div>
 }
 
 @code 
@@ -218,11 +243,15 @@
 	TestResults[]? results;
 	private ConfirmDialog dialog = default!;
 	private bool isTestLaunched;
+	private bool testFail = false;
 	private bool isButtonDisabled { get => (selectedAlgorithm == null || selectedFitnessFunctions.Count == 0 || isTestLaunched) ? true : false; }
 
+	enum ChartXAxis { Iterations, Population }
+	enum ChartYAxis { FBest, FitnessEvaluationCount }
 	private ChartData? iterationChart;
 	private ChartData? populationChart;
-	private ChartData? numberOfEvaluationFitnessfunctionChart;
+	private ChartData? fitnessEvaluationIterationChart;
+	private ChartData? fitnessEvaluationPopulationChart;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -338,11 +367,6 @@
 			StateHasChanged();
 
 			await LaunchTest();
-			await Task.Run(() =>
-			{
-				CreateChartsForIterations(minN);
-				CreateChartsForPopulation(minI);
-			});
 
 			isTestLaunched = false;
 			StateHasChanged();
@@ -351,42 +375,74 @@
 
 	private async Task LaunchTest() 
 	{
+		testFail = false;
+		results = null;
 		try
 		{
 			TestRequest[] requests = PrepareTestRequests();
 			var response = await Http.PostAsJsonAsync("/test", requests);
 			results = await response.Content.ReadFromJsonAsync<TestResults[]>();
+
+			iterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FBest);
+			populationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FBest);
+			fitnessEvaluationIterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FitnessEvaluationCount, 6);
+			fitnessEvaluationPopulationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FitnessEvaluationCount, 7);
 		}
 		catch (Exception e) 
 		{
+			results = null;
+			testFail = true;
 			Console.WriteLine("Failed to launch new test: " + e.Message);
 		}
 	}
 
-
-	private void CreateChartsForIterations(int N) 
+	private ChartData? CreateChart(ChartXAxis xAxis, ChartYAxis yAxis, int? colorSeed = null)
 	{
 		if (results != null && fitnessFunctions != null)
 		{
 			var datasets = new List<IChartDataset>();
 			var labels = new List<string>();
-			labels = results.Select(results => results.I.ToString()).Distinct().ToList();
-			
+			if (xAxis == ChartXAxis.Iterations)
+				labels = results.Select(results => results.I.ToString()).Distinct().ToList();
+			else if (xAxis == ChartXAxis.Population)
+				labels = results.Select(results => results.N.ToString()).Distinct().ToList();
+
 			for (int i = 0; i < fitnessFunctions.Length; i++) 
 			{
-				var color = ColorUtility.CategoricalTwelveColors[i % 12].ToColor().ToRgbString();
+				int colorIndex = i;
+				if (colorSeed != null) 
+					colorIndex += (int)colorSeed;
+				var color = ColorUtility.CategoricalTwelveColors[colorIndex % 12].ToColor().ToRgbString();
+				List<double?> data = new List<double?>();
+				string label = "";
 
-				var querry = from result in results 
-								where (result.FunctionName == fitnessFunctions[i].FunctionName && result.N == N) 
-								select result;
-				var data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
-				
+				var querry = (xAxis == ChartXAxis.Iterations) ?
+					(from result in results
+					where (result.FunctionName == fitnessFunctions[i].FunctionName && result.N == minN)
+					select result) 
+					:
+					(from result in results
+					where (result.FunctionName == fitnessFunctions[i].FunctionName && result.I == minI)
+					select result);
+					
+				if (yAxis == ChartYAxis.FBest)
+				{
+					data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
+					label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}";
+				}
+				else if (yAxis == ChartYAxis.FitnessEvaluationCount) 
+				{
+					data = querry.Select(results => results.NumberOfEvaluationFitnessFunction).ToList().ConvertAll<double?>(i => i);
+					data = data.Distinct().ToList();
+					label = "Wywołania funkcji celu";
+				}
+
 				if (data.Count > 0) 
 				{
 					datasets.Add(
 						new LineChartDataset 
 						{
-						Label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}",
+						Label = label,
 						Data = data,
 						BackgroundColor = color,
 						BorderColor = color,
@@ -394,48 +450,15 @@
 						PointHoverRadius = new List<double> { 8 }
 						}
 					);
+					if (yAxis == ChartYAxis.FitnessEvaluationCount)
+						break;
 				}
 			}
-			iterationChart =  new ChartData { Labels = labels, Datasets = datasets };
+			return new ChartData { Labels = labels, Datasets = datasets };
 		}
+		return null;
 	}
 
-	private void CreateChartsForPopulation(int I)
-	{
-		if (results != null && fitnessFunctions != null)
-		{
-			var datasets = new List<IChartDataset>();
-			var labels = new List<string>();
-			labels = results.Select(results => results.N.ToString()).Distinct().ToList();
-			
-			for (int i = 0; i < fitnessFunctions.Length; i++)
-			{
-				var color = ColorUtility.CategoricalTwelveColors[i % 12].ToColor().ToRgbString();
-
-				var querry = from result in results
-								where (result.FunctionName == fitnessFunctions[i].FunctionName && result.I == I)
-								select result;
-				var data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
-
-				if (data.Count > 0) 
-				{
-					datasets.Add(
-						new LineChartDataset
-						{
-							Label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}",
-							Data = data,
-							BackgroundColor = color,
-							BorderColor = color,
-							PointRadius = new List<double> { 5 },
-							PointHoverRadius = new List<double> { 8 }
-						}
-					);
-				}
-			}
-			populationChart = new ChartData { Labels = labels, Datasets = datasets };
-		}
-	}
- 
 	private string ToTitleCase(string? str) 
 	{
 		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str ?? "");

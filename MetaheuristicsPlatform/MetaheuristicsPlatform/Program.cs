@@ -9,12 +9,13 @@ builder.Services.AddBlazorBootstrap();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-    
+
 
 builder.Services.AddScoped(sp =>
     new HttpClient
     {
-        BaseAddress = new Uri(backend_uri)
+        BaseAddress = new Uri(backend_uri),
+        Timeout = TimeSpan.FromMinutes(10)
     }
 );
 
