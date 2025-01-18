@@ -12,4 +12,14 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\data\txtReports\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\data\txtReportsIndex.txt" />
+    <None Include="wwwroot\data\txtReports\Report0-2025-01-18.txt" />
+    <None Include="wwwroot\data\txtReports\Report1-2025-01-18.txt" />
+  </ItemGroup>
+
 </Project>

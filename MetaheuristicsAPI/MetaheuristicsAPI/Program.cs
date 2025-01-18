@@ -1,8 +1,10 @@
 using MetaheuristicsAPI;
+using MetaheuristicsAPI.Data;
 using MetaheuristicsAPI.FitnessFunctions;
 using MetaheuristicsAPI.Interfaces;
 using MetaheuristicsAPI.Schemas;
-
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,8 +23,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+// Configure File Server for hosting reports
+var rootPath = $"{Directory.GetCurrentDirectory()}/wwwroot";
+var txtReportsPath = $"{rootPath}/data/txtReports";
+if (!Directory.Exists(txtReportsPath))
+{
+    Directory.CreateDirectory(txtReportsPath);
+}
+app.UseStaticFiles();
+/*app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(txtReportsfullPath),
+    RequestPath = txtReportsPath
+});*/
+
 app.UseHttpsRedirection();
 app.UseRequestTimeouts();
+
 
 // GET: returns available algorithm names
 app.MapGet("/algorithms", () => AlgorithmsProvider.GetAlgorithmNames())
@@ -48,6 +66,28 @@ app.MapGet("/algorithms/params/{algorithm}", (string algorithm) =>
 app.MapGet("/functions", () => FitnessFunctionsProvider.GetFitnessfunctionsSchemas())
 .WithName("GetFitnessFunctions")
 .WithDescription("Returns available fitness function names and their domain dimensions.")
+.WithOpenApi();
+
+// GET: returns paths to txt reports
+app.MapGet("reports/txt", () =>
+{
+    if (Directory.Exists(txtReportsPath))
+    {
+        Console.WriteLine(txtReportsPath);
+        string[] paths = Directory.GetFiles(txtReportsPath).Select(path => Path.GetFileName(path)).ToArray();
+        return Results.Ok(paths);
+    }
+    else
+    {
+        Console.WriteLine(txtReportsPath);
+        return Results.NotFound();
+    }
+
+})
+.WithName("GetTxtReports")
+.WithDescription("Returns paths to txt reports stored on the server.")
+.Produces<string[]>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status404NotFound)
 .WithOpenApi();
 
 // POST: computes algorithm tests
@@ -89,10 +129,13 @@ app.MapPost("/test", async (TestRequest[] requests) =>
             };
             results[i] = result;
         }
+        TextFileReportWriter txtWriter = new TextFileReportWriter(results, rootPath);
+        txtWriter.WriteTxt();
         return Results.Ok(results);
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"Computing error: {ex.Message}");                   
         return Results.BadRequest($"Computing error: {ex.Message}");
     }
 })
