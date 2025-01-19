@@ -9,14 +9,17 @@
         public string Description { get; set; } = "Parameter Description";
         public double LowerBoundary { get; set; } = 0.0;
         public double UpperBoundary { get; set; } = double.MaxValue;
+        public double DefaultValue { get; set; } = 0.0;
+        public double BestValue { get; set; } = 0.0;
 
-
-        public ParamInfo(string name, string description, double lb = 0.0d, double ub = 0.0d)
+        public ParamInfo(string name, string description, double lb, double ub, double defaultValue, double bestValue)
         {
-            Name = name;
-            Description = description;
-            LowerBoundary = lb;
-            UpperBoundary = ub;
+            this.Name = name;
+            this.Description = description;
+            this.LowerBoundary = lb;
+            this.UpperBoundary = ub;
+            this.DefaultValue = defaultValue;
+            this.BestValue = bestValue;
         }
         
         public ParamInfo() { }

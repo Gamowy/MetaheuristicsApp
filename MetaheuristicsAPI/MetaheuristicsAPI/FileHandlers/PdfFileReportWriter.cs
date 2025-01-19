@@ -65,7 +65,19 @@ namespace MetaheuristicsAPI.FileHandlers
 
                                 col.Item()
                                     .Text($"Data raportu: {DateTime.Now}")
-                                    .FontSize(18);
+                                    .FontSize(14);
+                                if (results.Length > 0)
+                                {
+                                    col.Item()
+                                        .Text($"Testowany algorytm: {results[0].AlgorithmName}")
+                                        .FontSize(14);
+                                    if (results[0].Parameters != null)
+                                    {
+                                        col.Item()
+                                            .Text($"Parametry wewnętrzne: {string.Join(", ", results[0].Parameters ?? [])}")
+                                            .FontSize(14);
+                                    }
+                                }
                             });
                         });
 

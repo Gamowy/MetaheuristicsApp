@@ -45,10 +45,10 @@ namespace MetaheuristicsAPI.Algorithms
 
         private ParamInfo[] _paramsInfo =
         [
-            new ParamInfo("C1", "Parametr C1, Zalecane wartości: 1.0, 2.0", 1.0, 2.0),
-            new ParamInfo("C2", "Parametr C2, Zalecane wartości: 2.0, 4.0, 6.0", 2.0, 6.0),
-            new ParamInfo("C3", "Parametr C3, Zalecane wartości: 1.0, 2.0", 1.0, 2.0),
-            new ParamInfo("C4", "Parametr C4, Zalecane wartości: 0.5, 1.0", 0.5, 1.0)
+            new ParamInfo("C1", "Parametr C1, Zalecane wartości: 1.0, 2.0", 1.0, 2.0, 2.0, 2.0),
+            new ParamInfo("C2", "Parametr C2, Zalecane wartości: 2.0, 4.0, 6.0", 2.0, 6.0, 6.0, 2.0),
+            new ParamInfo("C3", "Parametr C3, Zalecane wartości: 1.0, 2.0", 1.0, 2.0, 2.0, 1.0),
+            new ParamInfo("C4", "Parametr C4, Zalecane wartości: 0.5, 1.0", 0.5, 1.0, 0.5, 1.0)
         ];
         public ParamInfo[] ParamsInfo { get => _paramsInfo; set => _paramsInfo = value; }
         IStateWriter IOptimizationAlgorithm.writer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

@@ -75,6 +75,10 @@
 			<p class="fs-5 text-center">Parametry wewnętrzne</p>
 			@if (paramInfo != null && parameters != null && paramInfo.Length > 0)
 			{
+				<div class="mb-3 form-check">
+					<input class="form-check-input" type="checkbox" @onclick="UseBestParamsClick"/>
+					<label class="form-check-label">Użyj najlepszych wartości parametrów</label>
+				</div>
 				@for (int i = 0; i < paramInfo.Length; i++)
 				{
 					int index = i;
@@ -85,10 +89,11 @@
 							Min="@paramInfo[index].LowerBoundary"
 							Max="@paramInfo[index].UpperBoundary"
 							Step="0.1"
-							Placeholder="Wprowadź wartość parametru" />
+							Placeholder="Wprowadź wartość parametru"
+							Disabled="useBestParams"
+							/>
 						</div>
 					</div>
-
 				}
 			}
 			else
@@ -107,11 +112,11 @@
 		@if(fitnessFunctions != null) 
 		{
 			<p class="fs-5 text-center">Dostępne funkcje</p>
-			@foreach (var function in fitnessFunctions)
+			@for (int i = 0; i < fitnessFunctions.Length; i++)
 			{
 				<div class="mb-3 form-check">
-					<input class="form-check-input" type="checkbox" @oninput="(ev) => FitnessFunctionCheckBoxPressed(ev, function.FunctionName)" />
-					<label class="form-check-label">@ToTitleCase(function.FunctionName)</label>
+					<input class="form-check-input" type="checkbox" @oninput="(ev) => FitnessFunctionCheckBoxPressed(ev, fitnessFunctions[i].FunctionName)" />
+					<label class="form-check-label">@ToTitleCase(fitnessFunctions[i].FunctionName)</label>
 				</div>
 			}
 
@@ -229,6 +234,7 @@ else if (testFail) {
 {
 	private string[]? algorithms;
 	private ParamInfo[]? paramInfo;
+	private bool useBestParams = false;
 	private double[]? parameters;
 
 	private FitnessFunctionSchema[]? fitnessFunctions;
@@ -299,11 +305,27 @@ else if (testFail) {
 			if (paramInfo != null && paramInfo.Length > 0)
 			{
 				parameters = new double[paramInfo.Length];
+				for (int i = 0; i < parameters.Length; i++) 
+				{
+					parameters[i] = paramInfo[i].DefaultValue;
+				}
 			}
 		}
 		catch (HttpRequestException e)
 		{
 			Console.WriteLine("Failed to fetch algorithm inner parameters: " + e.Message);
+		}
+	}
+
+	private void UseBestParamsClick() 
+	{
+		if (parameters != null && paramInfo != null)
+		{
+			useBestParams = !useBestParams;
+			for (int i = 0; i < parameters.Length; i++)
+			{
+				parameters[i] = paramInfo[i].BestValue;
+			}
 		}
 	}
 

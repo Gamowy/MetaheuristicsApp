@@ -24,7 +24,7 @@ namespace MetaheuristicsAPI.Algorithms
         public int NumberOfEvaluationFitnessFunction { get; set; }
 
         private ParamInfo[] _paramInfo = [
-                new ParamInfo("C", "Parametr C", 0.0, 1.0)
+                new ParamInfo("C", "Parametr C", 0.0, 1.0, 0.8, 0.1)
             ];
         public ParamInfo[] ParamsInfo { get => _paramInfo; set => _paramInfo = value; }
         public IStateWriter writer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

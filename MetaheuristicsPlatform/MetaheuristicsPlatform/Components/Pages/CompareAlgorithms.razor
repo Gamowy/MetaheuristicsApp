@@ -1,6 +1,433 @@
 @page "/compare"
+@using MetaheuristicsPlatform.Schemas
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
+@rendermode InteractiveServer
 
 <PageTitle>Metaheurystyki - porównanie</PageTitle>
+<ConfirmDialog @ref="dialog" />
 
 <h1>Porównywanie wybranych algorytmów</h1>
 <p class="lead">Porównaj wybrane algorytmy z automatycznym doborem najlepszych wartości parametrów</p>
+
+<form>
+	<p class="text-center fs-3 ">Algorytmy</p>
+	<div class="mb-3 border border-dark rounded p-3" id="formAlgorithm">
+		<p class="fs-5 text-center">Dostępne algorytmy optymalizacyjne</p>
+		@if (algorithms != null)
+		{
+			@for(int i = 0; i < algorithms.Length; i++) 
+			{
+				int index = i;
+				<div class="mb-3 form-check">
+					<input class="form-check-input" type="checkbox" @oninput="(ev) => AlgorithmCheckBoxPressed(ev, algorithms[index])"/>
+					<label class="form-check-label">@ToTitleCase(algorithms[index])</label>
+				</div>
+			}
+
+			<p class="fs-5 text-center">Parametry zewnętrzne</p>
+			<div class="row">
+				<div class="col">
+					<p class="text-center fw-bold">Ilość iteracji</p>
+				</div>
+				<div class="col">
+					<p class="text-center fw-bold">Rozmiar populacji</p>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<div class="mb-3">
+						<span class="form-text">Wartość początkowa</span>
+						<NumberInput TValue="int" @bind-Value="@minI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość początkową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Wartość końcowa</span>
+						<NumberInput TValue="int" @bind-Value="@maxI" EnableMinMax="true" Min="@minI" Max="10000" Placeholder="Wprowadź wartość końcową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Krok</span>
+						<NumberInput TValue="int" @bind-Value="@stepI" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź krok" />
+					</div>
+				</div>
+
+				<div class="col">
+					<div class="mb-3">
+						<span class="form-text">Wartość początkowa</span>
+						<NumberInput TValue="int" @bind-Value="@minN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź wartość początkową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Wartość końcowa</span>
+						<NumberInput TValue="int" @bind-Value="@maxN" EnableMinMax="true" Min="@minN" Max="10000" Placeholder="Wprowadź wartość końcową" />
+					</div>
+
+					<div class="mb-3">
+						<span class="form-text">Krok</span>
+						<NumberInput TValue="int" @bind-Value="@stepN" EnableMinMax="true" Min="1" Max="10000" Placeholder="Wprowadź krok" />
+					</div>
+				</div>
+			</div>
+
+			<p class="fs-5 text-center">Parametry wewnętrzne</p>
+			<div class="mb-3 d-flex justify-content-center">
+				<div class="form-check ms-2 me-2">
+					<input class="form-check-input" type="radio" name="innerParamsUsed" id="useDefaultParams" 
+					checked="@(useBestValues == false)" @onchange="@(() => useBestValues = false)">
+					<label class="form-check-label" for="useDefaultParams">
+						Domyślne wartości
+					</label>
+				</div>
+				<div class="form-check ms-2 me-2">
+					<input class="form-check-input" type="radio" name="innerParamsUsed" id="useBestParams"
+						   checked="@(useBestValues == true)" @onchange="@(() => useBestValues = true)">
+					<label class="form-check-label" for="useBestParams">
+						Najlepsze wartości
+					</label>
+				</div>
+			</div>
+		}
+		else
+		{
+			<p class="mb-3 text-center fs-5">Nie znaleziono algorytmów...</p>
+		}
+	</div>
+
+	<p class="text-center fs-3">Funkcje testowe</p>
+	<div class="mb-3 border border-dark p-3" id="formAlgorithm">
+		@if (fitnessFunctions != null) 
+		{
+			<div class="mb-3 form-floating">
+				<select class="form-select" id="fitnessfunctionSelect" @onchange="FitnessFunctionSelectionChanged">
+					<option value="" selected disabled>Wybierz funkcję testową</option>
+					@foreach (var function in fitnessFunctions)
+					{
+						<option value="@function.FunctionName">@ToTitleCase(function.FunctionName)</option>
+					}
+				</select>
+				<label for="algorithmSelect">Funkcja testowa</label>
+			</div>
+
+			<p class="fs-5 text-center">Liczba szukanych parametrów</p>
+			<span class="form-text">Maksymalna liczba szukanych parametrów</span>
+			<NumberInput class="mb-3" TValue="int" @bind-Value="selectedDim" EnableMinMax="true" Min="1" Max="100" Placeholder="Wprowadź liczbę szukanych parametrów" />
+		}
+		else
+		{
+			<p class="mb-3 text-center fs-5">Nie znaleziono funkcji testowych...</p>
+		}
+	</div>
+	<div class="mb-3 row text-center">
+		<div class="col ">
+			<Button id="launchTestButton" class="d-flex mx-auto justify-content-center" Color="ButtonColor.Primary" @onclick="ShowConfirmationDialog" Size="ButtonSize.Large"
+			LoadingText="&nbsp&nbspGenerowanie raportu..." Disabled="@isButtonDisabled" Loading="@isTestLaunched">
+				<span class="text">Uruchom test</span>
+			</Button>
+		</div>
+	</div>
+</form>
+
+
+@if (results != null)
+{
+	<div class="alert alert-success" role="alert">
+		Pomyślnie wygenerowano raport z testów!
+	</div>
+	<Accordion class="mb-3">
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.FileTypeTxt" Class="me-1" />
+				Rezultaty testów - txt
+			</TitleTemplate>
+			<Content>
+				<div class="overflow-auto" style="height: 600px">
+					@for (int i = 0; i < results.Length; i++)
+					{
+						int index = i + 1;
+						<div class="mb-3">
+							<p class="mb-2"><span class="lead">Test nr. @index</span></p>
+							<p class="mb-2"><span class="text-decoration-underline">Algorytm</span>: @ToTitleCase(results[i].AlgorithmName)</p>
+							<p class="mb-2"><span class="text-decoration-underline">Funkcja testowa</span>: @ToTitleCase(results[i].FunctionName)</p>
+							<p class="mb-2">Ilość iteracji @results[i].I</p>
+							<p class="mb-2">Rozmiar populacji: @results[i].N</p>
+							<p class="mb-2">Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
+							<p class="mb-2"><span class="fw-bold">XBest</span>: (@string.Join(", ", results[i].XBest))</p>
+							<p class="mb-2"><span class="fw-bold">Fbest</span>: @results[i].FBest</p>
+						</div>
+					}
+				</div>
+			</Content>
+		</AccordionItem>
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.FileTypePdf" Class="me-1" />
+				Rezultaty testów - pdf
+			</TitleTemplate>
+			<Content>
+				<p class="mb-3 fs-5">Raport w formacie pdf:</p>
+				<a href="@pdfPath" target="_blank" download="@pdfPath">Kliknij tutaj by otworzyć raport</a>
+			</Content>
+		</AccordionItem>
+		<AccordionItem>
+			<TitleTemplate>
+				<Icon Name="IconName.BarChartLine" Class="me-1" />
+				Rezultaty testów - wykresy
+			</TitleTemplate>
+			<Content>
+				@if (iterationChart != null)
+				{
+					string title = $"Wartość funkcji celu w zależności od liczby iteracji (N = {minN})";
+					<div class="mb-4 overflow-auto">
+						<TestLineChart chartData="@iterationChart" title="@title"
+						xLabel="Ilość iteracji" yLabel="Wartość funkcji celu" />
+					</div>
+				}
+				@if (populationChart != null)
+				{
+					string title = $"Wartość funkcji celu w zależności od rozmiaru populacji (I = {minI})";
+					<div class="mb-4 overflow-auto">
+						<TestLineChart chartData="@populationChart" title="@title"
+						xLabel="Rozmiar populacji" yLabel="Wartość funkcji celu" />
+					</div>
+				}
+				@if (fitnessEvaluationIterationChart != null)
+				{
+					string title = $"Liczba wywołań funkcji celu w zależności od ilości iteracji (N = {minN})";
+					<div class="mb-4 overflow-auto">
+						<TestLineChart chartData="@fitnessEvaluationIterationChart" title="@title"
+						xLabel="Ilość iteracji" yLabel="Liczba wywołań funkcji celu" />
+					</div>
+				}
+				@if (fitnessEvaluationPopulationChart != null)
+				{
+					string title = $"Liczba wywołań funkcji celu w zależności od rozmiaru populacji (I = {minI})";
+					<div class="mb-4 overflow-auto">
+						<TestLineChart chartData="@fitnessEvaluationPopulationChart" title="@title"
+						xLabel="Rozmiar populacji" yLabel="Liczba wywołań funkcji celu" />
+					</div>
+				}
+			</Content>
+		</AccordionItem>
+	</Accordion>
+}
+else if (testFail)
+{
+	<div class="alert alert-danger" role="alert">
+		Niepowodzenie podczas wykonywania testów!<br />
+		Sprawdź połączenie internetowe oraz poprawnośc wprowadzonych parametrów.
+	</div>
+}
+
+@code
+{
+	private string[]? algorithms;
+	private ParamInfo[]? paramInfo;
+
+	private bool useBestValues = false;
+
+	private FitnessFunctionSchema[]? fitnessFunctions;
+
+	private List<string> selectedAlgorithms = new List<string>();
+	private string? selectedFitnessFunction;
+	private int selectedDim = 2;
+
+	private int minN = 10, maxN = 40, stepN = 10;
+	private int minI = 10, maxI = 40, stepI = 10;
+
+	TestResults[]? results;
+	private string? pdfPath;
+	private ConfirmDialog dialog = default!;
+	private bool isTestLaunched;
+	private bool testFail = false;
+	private bool isButtonDisabled { get => (selectedAlgorithms.Count == 0 || selectedFitnessFunction == null || isTestLaunched) ? true : false; }
+
+
+	enum ChartXAxis { Iterations, Population }
+	enum ChartYAxis { FBest, FitnessEvaluationCount }
+	private ChartData? iterationChart;
+	private ChartData? populationChart;
+	private ChartData? fitnessEvaluationIterationChart;
+	private ChartData? fitnessEvaluationPopulationChart;
+
+	protected override async Task OnInitializedAsync()
+	{
+		// Get algorithms
+		try
+		{
+			algorithms = await Http.GetFromJsonAsync<string[]>("algorithms");
+		}
+		catch (HttpRequestException e)
+		{
+			algorithms = null;
+			Console.WriteLine("Failed to fetch algorithms from server: " + e.Message);
+		}
+
+
+		// Get fitness functions
+		try
+		{
+			fitnessFunctions = await Http.GetFromJsonAsync<FitnessFunctionSchema[]>("functions");
+		}
+		catch (HttpRequestException e)
+		{
+			fitnessFunctions = null;
+			Console.WriteLine("Failed to fetch fitness functions from server: " + e.Message);
+		}
+	}
+
+	// Called when selected fitness function changes
+	private void FitnessFunctionSelectionChanged(ChangeEventArgs ev)
+	{
+		string functionName = ev?.Value?.ToString() ?? "";
+		selectedFitnessFunction = functionName;
+	}
+
+	private async Task GetInnerParams(string algorithmName)
+	{
+		try
+		{
+			paramInfo = await Http.GetFromJsonAsync<ParamInfo[]>($"algorithms/params/{algorithmName}");
+		}
+		catch (HttpRequestException e)
+		{
+			Console.WriteLine("Failed to fetch algorithm inner parameters: " + e.Message);
+		}
+	}
+
+	// Called when algorithm checkbox pressed
+	private void AlgorithmCheckBoxPressed(ChangeEventArgs ev, string algorithmName)
+	{
+		if (!selectedAlgorithms.Contains(algorithmName))
+		{
+			selectedAlgorithms.Add(algorithmName);
+		}
+		else
+		{
+			selectedAlgorithms.Remove(algorithmName);
+		}
+	}
+
+	private TestRequest[] PrepareTestRequests()
+	{
+		throw new NotImplementedException();
+	}
+
+	private async Task ShowConfirmationDialog()
+	{
+		var confirmation = await dialog.ShowAsync(
+			title: "Porównanie algorytmów",
+			message1: $"Wybrana funkcja testowa: {ToTitleCase(selectedFitnessFunction)}",
+			message2: $"Przetestować algorytmy na wybranej funkcji testowej?"
+		);
+
+		if (confirmation)
+		{
+			isTestLaunched = true;
+			StateHasChanged();
+
+			await LaunchTest();
+
+			isTestLaunched = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task LaunchTest()
+	{
+		testFail = false;
+		try
+		{
+			TestRequest[] requests = PrepareTestRequests();
+			var response = await Http.PostAsJsonAsync("/test", requests);
+			var responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
+
+			if (responseBody != null)
+			{
+				results = responseBody.Results;
+				pdfPath = $"{Http.BaseAddress!}data/pdfReports/{responseBody.PdfFilePath}";
+
+				iterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FBest);
+				populationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FBest);
+				fitnessEvaluationIterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FitnessEvaluationCount, 6);
+				fitnessEvaluationPopulationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FitnessEvaluationCount, 7);
+			}
+		}
+		catch (Exception e)
+		{
+			results = null;
+			pdfPath = null;
+			testFail = true;
+			Console.WriteLine("Failed to launch new test: " + e.Message);
+		}
+	}
+
+	private ChartData? CreateChart(ChartXAxis xAxis, ChartYAxis yAxis, int? colorSeed = null)
+	{
+		if (results != null && fitnessFunctions != null)
+		{
+			var datasets = new List<IChartDataset>();
+			var labels = new List<string>();
+			if (xAxis == ChartXAxis.Iterations)
+				labels = results.Select(results => results.I.ToString()).Distinct().ToList();
+			else if (xAxis == ChartXAxis.Population)
+				labels = results.Select(results => results.N.ToString()).Distinct().ToList();
+
+			for (int i = 0; i < fitnessFunctions.Length; i++)
+			{
+				int colorIndex = i;
+				if (colorSeed != null)
+					colorIndex += (int)colorSeed;
+				var color = ColorUtility.CategoricalTwelveColors[colorIndex % 12].ToColor().ToRgbString();
+				List<double?> data = new List<double?>();
+				string label = "";
+
+				var querry = (xAxis == ChartXAxis.Iterations) ?
+					(from result in results
+						where (result.FunctionName == fitnessFunctions[i].FunctionName && result.N == minN)
+						select result)
+					:
+					(from result in results
+						where (result.FunctionName == fitnessFunctions[i].FunctionName && result.I == minI)
+						select result);
+
+				if (yAxis == ChartYAxis.FBest)
+				{
+					data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
+					label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}";
+				}
+				else if (yAxis == ChartYAxis.FitnessEvaluationCount)
+				{
+					data = querry.Select(results => results.NumberOfEvaluationFitnessFunction).ToList().ConvertAll<double?>(i => i);
+					data = data.Distinct().ToList();
+					label = "Wywołania funkcji celu";
+				}
+
+				if (data.Count > 0)
+				{
+					datasets.Add(
+						new LineChartDataset
+							{
+								Label = label,
+								Data = data,
+								BackgroundColor = color,
+								BorderColor = color,
+								PointRadius = new List<double> { 5 },
+								PointHoverRadius = new List<double> { 8 }
+							}
+					);
+					if (yAxis == ChartYAxis.FitnessEvaluationCount)
+						break;
+				}
+			}
+			return new ChartData { Labels = labels, Datasets = datasets };
+		}
+		return null;
+	}
+
+	private string ToTitleCase(string? str)
+	{
+		return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str ?? "");
+	}
+}
