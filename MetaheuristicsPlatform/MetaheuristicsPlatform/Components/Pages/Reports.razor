@@ -2,6 +2,7 @@
 @using MetaheuristicsPlatform.Schemas
 @using System.Text.RegularExpressions
 @inject HttpClient Http
+@rendermode InteractiveServer
 
 <PageTitle>Metaheurystyki - raporty</PageTitle>
 
@@ -13,27 +14,30 @@
 {
 	if(txtReports != null)
 	{
-		<table class="mb-5 table">
-			<thead>
-				<tr>
-					<th>Lp.</th>
-					<th>Data raportu</th>
-					<th>Plik z raportem (.txt)</th>
-				</tr>
-			</thead>
-			<tbody>
-				@for (int i = 0; i < txtReports.Length; i++)
-				{
-					int lp = i + 1;
-					string txtHref = $"{Http.BaseAddress!}data/txtReports/{txtReports[i].Report}";
-					<tr>
-						<td>@lp</td>
-						<td>@txtReports[i].Date.ToShortDateString()</td>
-						<td><a href="@txtHref" download="@txtReports[i].Report">@txtReports[i].Report</a></td>
-					</tr>
-				}
-			</tbody>
-		</table>
+		<div class="mb-3">
+			<Grid TItem="ReportAndDate"
+			Class="table table-hover table-bordered table-striped"
+			DataProvider="TxtReportsProvider"
+			AllowSorting="true"
+			AllowPaging="true"
+			PageSize="10"
+			Responsive="true">
+
+				<GridColumns>
+					<GridColumn TItem="ReportAndDate" HeaderText="Lp." IsDefaultSortColumn="true" SortDirection="SortDirection.Descending"
+								SortKeySelector="item => item.Lp">
+						@context.Lp
+					</GridColumn>
+					<GridColumn TItem="ReportAndDate" HeaderText="Data utworzenia" IsDefaultSortColumn="true" SortDirection="SortDirection.Descending" 
+					SortKeySelector="item => item.Date">
+						@context.Date.ToShortDateString()
+					</GridColumn>
+					<GridColumn TItem="ReportAndDate" HeaderText="Plik z raportem (.txt)" Sortable="false">
+						<a href="@context.Href" target="_blank" download="@context.Report">@context.Report</a>
+					</GridColumn>
+				</GridColumns>
+			</Grid>
+		</div>
 	}
 	else
 	{
@@ -41,27 +45,30 @@
 	}
 	<p class="text-center fs-3 ">Raporty pdf</p>
 	@if (pdfReports != null) {
-		<table class="table">
-			<thead>
-				<tr>
-					<th>Lp.</th>
-					<th>Data raportu</th>
-					<th>Plik z raportem (.pdf)</th>
-				</tr>
-			</thead>
-			<tbody>
-				@for (int i = 0; i < pdfReports.Length; i++)
-				{
-					int lp = i + 1;
-					string txtHref = $"{Http.BaseAddress!}data/pdfReports/{pdfReports[i].Report}";
-					<tr>
-						<td>@lp</td>
-						<td>@pdfReports[i].Date.ToShortDateString()</td>
-						<td><a href="@txtHref" download="@pdfReports[i].Report">@pdfReports[i].Report</a></td>
-					</tr>
-				}
-			</tbody>
-		</table>
+		<div class="mb-3">
+			<Grid TItem="ReportAndDate"
+			Class="table table-hover table-bordered table-striped"
+			DataProvider="PdfReportsProvider"
+			AllowSorting="true"
+			AllowPaging="true"
+			PageSize="10"
+			Responsive="true">
+
+				<GridColumns>
+					<GridColumn TItem="ReportAndDate" HeaderText="Lp." IsDefaultSortColumn="true" SortDirection="SortDirection.Descending"
+								SortKeySelector="item => item.Lp">
+						@context.Lp
+					</GridColumn>
+					<GridColumn TItem="ReportAndDate" HeaderText="Data utworzenia" IsDefaultSortColumn="true" SortDirection="SortDirection.Descending"
+					SortKeySelector="item => item.Date">
+						@context.Date.ToShortDateString()
+					</GridColumn>
+					<GridColumn TItem="ReportAndDate" HeaderText="Plik z raportem (.pdf)" Sortable="false">
+						<a href="@context.Href" target="_blank" download="@context.Report">@context.Report</a>
+					</GridColumn>
+				</GridColumns>
+			</Grid>
+		</div>
 	}
 	else {
 		<p class="mb-3 text-center fs-5">Brak raportów pdf</p>
@@ -74,10 +81,13 @@ else {
 @code 
 {
 	private struct ReportAndDate {
+		public int Lp;
 		public string Report;
 		public DateTime Date;
+		public string Href;
 	}
 	private Regex dateRegex = new Regex(@"\d{4}\-\d{2}\-\d{2}");
+
 	private ReportPaths? response;
 	private ReportAndDate[]? txtReports;
 	private ReportAndDate[]? pdfReports;
@@ -99,13 +109,14 @@ else {
 						{
 							txtReports[i] = new ReportAndDate()
 								{
+									Lp = i+1,
 									Report = response.TxtPaths[i],
-									Date = DateTime.Parse(match.Value)
+									Date = DateTime.Parse(match.Value),
+									Href = $"{Http.BaseAddress!}data/txtReports/{response.TxtPaths[i]}"
 								};
 
 						}
 					}
-					txtReports = txtReports.OrderByDescending(x => x.Date).ThenBy(x => x.Report).ToArray();
 				}
 				if (response.PdfPaths.Length > 0)
 				{
@@ -117,12 +128,13 @@ else {
 						{
 							pdfReports[i] = new ReportAndDate()
 								{
+									Lp = i+1,
 									Report = response.PdfPaths[i],
-									Date = DateTime.Parse(match.Value)
+									Date = DateTime.Parse(match.Value),
+									Href = $"{Http.BaseAddress!}data/pdfReports/{response.PdfPaths[i]}"
 								};
 						}
 					}
-					pdfReports = pdfReports.OrderByDescending(x => x.Date).ThenBy(x => x.Report).ToArray();
 				}
 			}
 		}
@@ -133,5 +145,30 @@ else {
 			pdfReports = null;
 			Console.WriteLine("Failed to fetch reports: " + e.Message);
 		}
+	}
+
+	private async Task<GridDataProviderResult<ReportAndDate>> TxtReportsProvider(GridDataProviderRequest<ReportAndDate> request)
+	{
+		if (txtReports != null)
+		{
+			return await Task.FromResult(request.ApplyTo(txtReports));
+		}
+		else 
+		{
+			return await Task.FromResult(request.ApplyTo(Array.Empty<ReportAndDate>()));
+		}
+	}
+
+	private async Task<GridDataProviderResult<ReportAndDate>> PdfReportsProvider(GridDataProviderRequest<ReportAndDate> request)
+	{
+		if (pdfReports != null)
+		{
+			return await Task.FromResult(request.ApplyTo(pdfReports));
+		}
+		else
+		{
+			return await Task.FromResult(request.ApplyTo(Array.Empty<ReportAndDate>()));
+		}
+;
 	}
 }

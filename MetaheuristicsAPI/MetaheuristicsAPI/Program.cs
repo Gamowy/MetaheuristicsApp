@@ -41,7 +41,6 @@ app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRequestTimeouts();
 
-
 // GET: returns available algorithm names
 app.MapGet("/algorithms", () => AlgorithmsProvider.GetAlgorithmNames())
 .WithName("GetAlgorithms")
@@ -73,8 +72,8 @@ app.MapGet("reports/paths", () =>
 {
     if (Directory.Exists(txtReportsPath) && Directory.Exists(pdfReportsPath))
     {
-        string[] txtPaths = Directory.GetFiles(txtReportsPath).Select(path => Path.GetFileName(path)).ToArray();
-        string[] pdfPaths = Directory.GetFiles(pdfReportsPath).Select(path => Path.GetFileName(path)).ToArray();
+        string[] txtPaths = Directory.GetFiles(txtReportsPath).OrderBy(f => new FileInfo(f).CreationTime).Select(path => Path.GetFileName(path)).ToArray();
+        string[] pdfPaths = Directory.GetFiles(pdfReportsPath).OrderBy(f => new FileInfo(f).CreationTime).Select(path => Path.GetFileName(path)).ToArray();
         ReportPaths paths = new ReportPaths
         {
             TxtPaths = txtPaths,
@@ -138,7 +137,13 @@ app.MapPost("/test", async (TestRequest[] requests) =>
         PdfFileReportWriter pdfWriter = new PdfFileReportWriter(results, rootPath);
         txtWriter.WriteTxt();
         pdfWriter.GenerateReport();
-        return Results.Ok(results);
+
+        TestResponse response = new TestResponse
+        {
+            Results = results,
+            PdfFilePath = pdfWriter.fileName
+        };
+        return Results.Ok(response);
     }
     catch (Exception ex)
     {
@@ -148,7 +153,7 @@ app.MapPost("/test", async (TestRequest[] requests) =>
 })
 .WithName("PostTestRequest")
 .WithDescription("Posts request for computing algorithm tests on given test functions with specified parametrs.")
-.Produces<TestResults[]>(StatusCodes.Status200OK)
+.Produces <TestResponse>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
 .WithRequestTimeout(TimeSpan.FromMinutes(10))
 .WithOpenApi();

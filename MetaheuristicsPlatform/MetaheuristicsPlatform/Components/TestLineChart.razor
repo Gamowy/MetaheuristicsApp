@@ -29,9 +29,9 @@
                 Responsive = true
             };
 
-        lineChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = xLabel, Display = true };
-        lineChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = yLabel, Display = true };
-        lineChartOptions.Plugins.Title!.Text = title;
+        lineChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = xLabel, Display = true, Font = new ChartFont { Size = 14 } };
+        lineChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = yLabel, Display = true, Font = new ChartFont { Size = 14 } };
+        lineChartOptions.Plugins.Title = new ChartPluginsTitle { Text = title, Display = true, Font = new ChartFont { Size = 20 } };
         lineChartOptions.Plugins.Title.Display = true;
     }
 

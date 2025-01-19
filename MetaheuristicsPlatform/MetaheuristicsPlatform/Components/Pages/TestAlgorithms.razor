@@ -172,7 +172,8 @@
 				Rezultaty testów - pdf
 			</TitleTemplate>
 			<Content>
-				Pdf
+				<p class="mb-3 fs-5">Raport w formacie pdf:</p>
+				<a href="@pdfPath" target="_blank" download="@pdfPath">Kliknij tutaj by otworzyć raport</a>
 			</Content>
 		</AccordionItem>
 		<AccordionItem>
@@ -184,7 +185,7 @@
 				@if (iterationChart != null) 
 				{
 					string title = $"Wartość funkcji celu w zależności od liczby iteracji (N = {minN})";
-					<div class="mb-3 overflow-auto">
+					<div class="mb-4 overflow-auto">
 						<TestLineChart chartData="@iterationChart" title="@title" 
 						xLabel="Ilość iteracji" yLabel="Wartość funkcji celu"/>
 					</div>
@@ -192,7 +193,7 @@
 				@if (populationChart != null)
 				{
 					string title = $"Wartość funkcji celu w zależności od rozmiaru populacji (I = {minI})";
-					<div class="mb-3 overflow-auto">
+					<div class="mb-4 overflow-auto">
 						<TestLineChart chartData="@populationChart" title="@title"
 						xLabel="Rozmiar populacji" yLabel="Wartość funkcji celu" />
 					</div>
@@ -200,7 +201,7 @@
 				@if (fitnessEvaluationIterationChart != null)
 				{
 					string title = $"Liczba wywołań funkcji celu w zależności od ilości iteracji (N = {minN})";
-					<div class="mb-3 overflow-auto">
+					<div class="mb-4 overflow-auto">
 						<TestLineChart chartData="@fitnessEvaluationIterationChart" title="@title"
 						xLabel="Ilość iteracji" yLabel="Liczba wywołań funkcji celu" />
 					</div>
@@ -208,7 +209,7 @@
 				@if (fitnessEvaluationPopulationChart != null)
 				{
 					string title = $"Liczba wywołań funkcji celu w zależności od rozmiaru populacji (I = {minI})";
-					<div class="mb-3 overflow-auto">
+					<div class="mb-4 overflow-auto">
 						<TestLineChart chartData="@fitnessEvaluationPopulationChart" title="@title"
 						xLabel="Rozmiar populacji" yLabel="Liczba wywołań funkcji celu" />
 					</div>
@@ -239,12 +240,13 @@ else if (testFail) {
 	private int minN = 10, maxN = 40, stepN = 10;
 	private int minI = 10, maxI = 40, stepI = 10;
 
-	TestLineChart? chart { get; set; }
 	TestResults[]? results;
+	private string? pdfPath;
 	private ConfirmDialog dialog = default!;
 	private bool isTestLaunched;
 	private bool testFail = false;
 	private bool isButtonDisabled { get => (selectedAlgorithm == null || selectedFitnessFunctions.Count == 0 || isTestLaunched) ? true : false; }
+
 
 	enum ChartXAxis { Iterations, Population }
 	enum ChartYAxis { FBest, FitnessEvaluationCount }
@@ -376,21 +378,27 @@ else if (testFail) {
 	private async Task LaunchTest() 
 	{
 		testFail = false;
-		results = null;
 		try
 		{
 			TestRequest[] requests = PrepareTestRequests();
 			var response = await Http.PostAsJsonAsync("/test", requests);
-			results = await response.Content.ReadFromJsonAsync<TestResults[]>();
+			var responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
 
-			iterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FBest);
-			populationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FBest);
-			fitnessEvaluationIterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FitnessEvaluationCount, 6);
-			fitnessEvaluationPopulationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FitnessEvaluationCount, 7);
+			if (responseBody != null)
+			{
+				results = responseBody.Results;
+				pdfPath = $"{Http.BaseAddress!}data/pdfReports/{responseBody.PdfFilePath}";
+
+				iterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FBest);
+				populationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FBest);
+				fitnessEvaluationIterationChart = CreateChart(ChartXAxis.Iterations, ChartYAxis.FitnessEvaluationCount, 6);
+				fitnessEvaluationPopulationChart = CreateChart(ChartXAxis.Population, ChartYAxis.FitnessEvaluationCount, 7);
+			}
 		}
 		catch (Exception e) 
 		{
 			results = null;
+			pdfPath = null;
 			testFail = true;
 			Console.WriteLine("Failed to launch new test: " + e.Message);
 		}

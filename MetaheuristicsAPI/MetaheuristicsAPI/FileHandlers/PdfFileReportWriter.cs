@@ -9,6 +9,7 @@ namespace MetaheuristicsAPI.FileHandlers
 {
     public class PdfFileReportWriter : IGeneratePDFReport
     {
+        public string fileName = "";
         private int fileIndex = 0;
         private string path;
         private string indexFilePath;
@@ -33,7 +34,8 @@ namespace MetaheuristicsAPI.FileHandlers
         public void GenerateReport()
         {
             fileIndex++;
-            var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd}.pdf");
+            fileName = $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd}.pdf";
+            var savePath = Path.Combine(path, fileName);
             var pdf = ComposePdfFile();
             pdf.GeneratePdf(savePath);
             File.WriteAllText(indexFilePath, fileIndex.ToString());
@@ -90,7 +92,7 @@ namespace MetaheuristicsAPI.FileHandlers
                                 header.Cell().Element(HeaderStyle).AlignCenter().Text("Funkcja testowa");
                                 header.Cell().Element(HeaderStyle).AlignCenter().Text("Ilość iteracji");
                                 header.Cell().Element(HeaderStyle).AlignCenter().Text("Rozmiar populacji");
-                                header.Cell().Element(HeaderStyle).AlignCenter().Text("Ilość wywołań funkcji");
+                                header.Cell().Element(HeaderStyle).AlignCenter().Text("Liczba wywołań funkcji");
                                 header.Cell().Element(HeaderStyle).AlignCenter().Text("XBest");
                                 header.Cell().Element(HeaderStyle).AlignCenter().Text("Fbest");
                             });
@@ -101,7 +103,7 @@ namespace MetaheuristicsAPI.FileHandlers
                                     double round = Math.Round(n, 4);
                                     return round == 0 ? 0 : round;
                                     });
-                                var fBest = Math.Round(results[i].FBest);
+                                var fBest = Math.Round(results[i].FBest, 4);
                                 table.Cell().Element(CellStyle).AlignCenter().Text($"{i+1}");
                                 table.Cell().Element(CellStyle).AlignCenter().Text(ToTitleCase(results[i].AlgorithmName));
                                 table.Cell().Element(CellStyle).AlignCenter().Text(ToTitleCase(results[i].FunctionName));
@@ -116,6 +118,7 @@ namespace MetaheuristicsAPI.FileHandlers
 
                     page.Footer()
                         .AlignCenter()
+                        .PaddingTop(5)
                         .Text(x =>
                         {
                             x.Span("Strona ");

@@ -43,12 +43,12 @@ namespace MetaheuristicsAPI.FileHadlers
                 _reportString += $"Funkcja testowa: {ToTitleCase(results[i].FunctionName)}\r\n";
                 _reportString += $"Ilość iteracji: {results[i].I}\r\n";
                 _reportString += $"Rozmiar populacji: {results[i].N}\r\n";
-                _reportString += $"Ilość wywołań funkcji: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
+                _reportString += $"Liczba wywołań funkcji: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
                 _reportString += $"XBest: {string.Join(", ", results[i].XBest)}\r\n";
                 _reportString += $"FBest: {results[i].FBest}\r\n\r\n";
             }
 
-            var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd}.txt");
+            var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd-}.txt");
             using (StreamWriter writer = File.CreateText(savePath))
             {
                 writer.WriteLine(_reportString);

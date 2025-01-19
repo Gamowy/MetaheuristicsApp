@@ -2,14 +2,16 @@
 
 POST {{MetaheuristicsAPI_HostAddress}}/test
 Content-Type: application/json
-{
-  "algorithm": "aoa",
-  "n": 80,
-  "i": 80,
-  "fun": "rastrigin",
-  "dim": 2,
-  "parameters": null
-}
+[
+    {
+      "algorithm": "aoa",
+      "n": 80,
+      "i": 80,
+      "fun": "rastrigin",
+      "dim": 2,
+      "parameters": null
+    }
+]
 ###
 
 GET {{MetaheuristicsAPI_HostAddress}}/algorithms
@@ -22,5 +24,8 @@ GET {{MetaheuristicsAPI_HostAddress}}/algorithms/params/{{algorithm}}
 ###
 
 GET {{MetaheuristicsAPI_HostAddress}}/functions
+
+###
+GET {{MetaheuristicsAPI_HostAddress}}/reports/paths
 
 ###
