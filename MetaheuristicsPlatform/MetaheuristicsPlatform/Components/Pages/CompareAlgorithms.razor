@@ -82,7 +82,7 @@
 				</div>
 				<div class="form-check ms-2 me-2">
 					<input class="form-check-input" type="radio" name="innerParamsUsed" id="useBestParams"
-						   checked="@(useBestValues == true)" @onchange="@(() => useBestValues = true)">
+					checked="@(useBestValues == true)" @onchange="@(() => useBestValues = true)">
 					<label class="form-check-label" for="useBestParams">
 						Najlepsze wartości
 					</label>
@@ -223,7 +223,6 @@ else if (testFail)
 @code
 {
 	private string[]? algorithms;
-	private ParamInfo[]? paramInfo;
 
 	private bool useBestValues = false;
 
@@ -284,15 +283,17 @@ else if (testFail)
 		selectedFitnessFunction = functionName;
 	}
 
-	private async Task GetInnerParams(string algorithmName)
+	private async Task<ParamInfo[]?> GetInnerParams(string algorithmName)
 	{
 		try
 		{
-			paramInfo = await Http.GetFromJsonAsync<ParamInfo[]>($"algorithms/params/{algorithmName}");
+			var paramInfo = await Http.GetFromJsonAsync<ParamInfo[]>($"algorithms/params/{algorithmName}");
+			return paramInfo;
 		}
 		catch (HttpRequestException e)
 		{
 			Console.WriteLine("Failed to fetch algorithm inner parameters: " + e.Message);
+			return null;
 		}
 	}
 
@@ -309,9 +310,57 @@ else if (testFail)
 		}
 	}
 
-	private TestRequest[] PrepareTestRequests()
+	private async Task<TestRequest[]> PrepareTestRequests()
 	{
-		throw new NotImplementedException();
+		List<TestRequest> testRequests = new List<TestRequest>();
+
+		if (selectedAlgorithms != null && fitnessFunctions!= null && selectedFitnessFunction != null) 
+		{
+			foreach (var algorithm in selectedAlgorithms)
+			{
+				var function = fitnessFunctions.Where(f => f.FunctionName == selectedFitnessFunction).FirstOrDefault();
+				if (function != null)
+				{
+					var paramInfo = await GetInnerParams(algorithm);
+					if (paramInfo != null)
+					{
+						double[] parameters = new double[paramInfo.Length];
+						for (int i = 0; i < paramInfo.Length; i++)
+						{
+							if (useBestValues)
+								parameters[i] = paramInfo[i].BestValue;
+							else
+								parameters[i] = paramInfo[i].DefaultValue;
+						}
+
+						if (function != null)
+						{
+							int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ?
+								selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
+
+							for (int objects = minN; objects <= maxN; objects += stepN)
+							{
+								for (int iterations = minI; iterations <= maxI; iterations += stepI)
+								{
+									testRequests.Add(
+										new TestRequest
+											{
+												Algorithm = algorithm,
+												N = objects,
+												I = iterations,
+												Fun = function.FunctionName,
+												Dim = dim,
+												Parameters = parameters
+											}
+									);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return testRequests.ToArray();
 	}
 
 	private async Task ShowConfirmationDialog()
@@ -339,7 +388,7 @@ else if (testFail)
 		testFail = false;
 		try
 		{
-			TestRequest[] requests = PrepareTestRequests();
+			TestRequest[] requests = await PrepareTestRequests();
 			var response = await Http.PostAsJsonAsync("/test", requests);
 			var responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
 
