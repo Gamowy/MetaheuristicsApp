@@ -164,6 +164,7 @@
 							<p class="mb-2"><span class="text-decoration-underline">Funkcja testowa</span>: @ToTitleCase(results[i].FunctionName)</p>
 							<p class="mb-2">Ilość iteracji @results[i].I</p>
 							<p class="mb-2">Rozmiar populacji: @results[i].N</p>
+							<p class="mb-2">Parametry wewnętrzne: @(string.Join(", ", results[0].Parameters ?? []))</p>
 							<p class="mb-2">Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
 							<p class="mb-2"><span class="fw-bold">XBest</span>: (@string.Join(", ", results[i].XBest))</p>
 							<p class="mb-2"><span class="fw-bold">Fbest</span>: @results[i].FBest</p>

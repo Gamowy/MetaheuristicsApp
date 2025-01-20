@@ -152,6 +152,7 @@
 							<p class="mb-2"><span class="text-decoration-underline">Funkcja testowa</span>: @ToTitleCase(results[i].FunctionName)</p>
 							<p class="mb-2">Ilość iteracji @results[i].I</p>
 							<p class="mb-2">Rozmiar populacji: @results[i].N</p>
+							<p class="mb-2">Parametry wewnętrzne: @(string.Join(", ", results[0].Parameters ?? []))</p>
 							<p class="mb-2">Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
 							<p class="mb-2"><span class="fw-bold">XBest</span>: (@string.Join(", ", results[i].XBest))</p>
 							<p class="mb-2"><span class="fw-bold">Fbest</span>: @results[i].FBest</p>
@@ -414,7 +415,7 @@ else if (testFail)
 
 	private ChartData? CreateChart(ChartXAxis xAxis, ChartYAxis yAxis, int? colorSeed = null)
 	{
-		if (results != null && fitnessFunctions != null)
+		if (results != null && algorithms != null)
 		{
 			var datasets = new List<IChartDataset>();
 			var labels = new List<string>();
@@ -423,7 +424,7 @@ else if (testFail)
 			else if (xAxis == ChartXAxis.Population)
 				labels = results.Select(results => results.N.ToString()).Distinct().ToList();
 
-			for (int i = 0; i < fitnessFunctions.Length; i++)
+			for (int i = 0; i < algorithms.Length; i++)
 			{
 				int colorIndex = i;
 				if (colorSeed != null)
@@ -434,23 +435,23 @@ else if (testFail)
 
 				var querry = (xAxis == ChartXAxis.Iterations) ?
 					(from result in results
-						where (result.FunctionName == fitnessFunctions[i].FunctionName && result.N == minN)
+						where (result.AlgorithmName == algorithms[i] && result.N == minN)
 						select result)
 					:
 					(from result in results
-						where (result.FunctionName == fitnessFunctions[i].FunctionName && result.I == minI)
+						where (result.AlgorithmName == algorithms[i] && result.I == minI)
 						select result);
 
 				if (yAxis == ChartYAxis.FBest)
 				{
 					data = querry.Select(results => results.FBest).ToList().ConvertAll<double?>(i => i);
-					label = $"{ToTitleCase(fitnessFunctions[i].FunctionName)}";
+					label = $"{ToTitleCase(algorithms[i])}";
 				}
 				else if (yAxis == ChartYAxis.FitnessEvaluationCount)
 				{
 					data = querry.Select(results => results.NumberOfEvaluationFitnessFunction).ToList().ConvertAll<double?>(i => i);
 					data = data.Distinct().ToList();
-					label = "Wywołania funkcji celu";
+					label = $"{ToTitleCase(algorithms[i])}";
 				}
 
 				if (data.Count > 0)
@@ -466,8 +467,6 @@ else if (testFail)
 								PointHoverRadius = new List<double> { 8 }
 							}
 					);
-					if (yAxis == ChartYAxis.FitnessEvaluationCount)
-						break;
 				}
 			}
 			return new ChartData { Labels = labels, Datasets = datasets };

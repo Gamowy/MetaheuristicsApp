@@ -4,6 +4,7 @@ using MetaheuristicsAPI.FileHandlers;
 using MetaheuristicsAPI.FitnessFunctions;
 using MetaheuristicsAPI.Interfaces;
 using MetaheuristicsAPI.Schemas;
+using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -95,7 +96,7 @@ app.MapGet("reports/paths", () =>
 .WithOpenApi();
 
 // POST: computes algorithm tests
-app.MapPost("/test", async (TestRequest[] requests) =>
+app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultiple=false) =>
 {
     TestResults[] results = new TestResults[requests.Length];
     try
@@ -123,7 +124,7 @@ app.MapPost("/test", async (TestRequest[] requests) =>
 
             TestResults result = new TestResults
             {
-                AlgorithmName = optimizationAlgorithm.Name,
+                AlgorithmName = requests[i].Algorithm,
                 FunctionName = requests[i].Fun,
                 N = requests[i].N,
                 I = requests[i].I,

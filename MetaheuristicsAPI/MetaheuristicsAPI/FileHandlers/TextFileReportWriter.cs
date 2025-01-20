@@ -34,26 +34,30 @@ namespace MetaheuristicsAPI.FileHadlers
         public void WriteTxt()
         {
             // Write report string
-            fileIndex++;
-            _reportString += $"Raport nr. {fileIndex}, Data raportu: {DateTime.Now}\r\n\r\n";
+            if (results.Length > 0) {
+                fileIndex++;
+                _reportString += $"Raport nr. {fileIndex}, Data raportu: {DateTime.Now}\r\n";
+                _reportString += $"Testowany algorytm: {results[0].AlgorithmName}\r\n";
+                _reportString += $"Parametry wewnętrzne: {string.Join(", ", results[0].Parameters ?? [])}\r\n\r\n";
             for (int i = 0; i < results.Length; i++)
-            {
-                _reportString += $"Test nr. {i}\r\n";
-                _reportString += $"Algorytm: {ToTitleCase(results[i].AlgorithmName)}\r\n";
-                _reportString += $"Funkcja testowa: {ToTitleCase(results[i].FunctionName)}\r\n";
-                _reportString += $"Ilość iteracji: {results[i].I}\r\n";
-                _reportString += $"Rozmiar populacji: {results[i].N}\r\n";
-                _reportString += $"Liczba wywołań funkcji: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
-                _reportString += $"XBest: {string.Join(", ", results[i].XBest)}\r\n";
-                _reportString += $"FBest: {results[i].FBest}\r\n\r\n";
-            }
+                {
+                    _reportString += $"Test nr. {i+1}\r\n";
+                    _reportString += $"Algorytm: {ToTitleCase(results[i].AlgorithmName)}\r\n";
+                    _reportString += $"Funkcja testowa: {ToTitleCase(results[i].FunctionName)}\r\n";
+                    _reportString += $"Ilość iteracji: {results[i].I}\r\n";
+                    _reportString += $"Rozmiar populacji: {results[i].N}\r\n";
+                    _reportString += $"Liczba wywołań funkcji: {results[i].NumberOfEvaluationFitnessFunction}\r\n";
+                    _reportString += $"XBest: {string.Join(", ", results[i].XBest)}\r\n";
+                    _reportString += $"FBest: {results[i].FBest}\r\n\r\n";
+                }
 
-            var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd-}.txt");
-            using (StreamWriter writer = File.CreateText(savePath))
-            {
-                writer.WriteLine(_reportString);
-            };
-            File.WriteAllText(indexFilePath, fileIndex.ToString());
+                var savePath = Path.Combine(path, $"raport{fileIndex}-{DateTime.Now:yyyy-MM-dd-}.txt");
+                using (StreamWriter writer = File.CreateText(savePath))
+                {
+                    writer.WriteLine(_reportString);
+                };
+                File.WriteAllText(indexFilePath, fileIndex.ToString());
+            }
         }
 
         private static string ToTitleCase(string? str)
