@@ -135,8 +135,8 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
             };
             results[i] = result;
         }
-        TextFileReportWriter txtWriter = new TextFileReportWriter(results, rootPath);
-        PdfFileReportWriter pdfWriter = new PdfFileReportWriter(results, rootPath);
+        TextFileReportWriter txtWriter = new TextFileReportWriter(results, rootPath, testMultiple);
+        PdfFileReportWriter pdfWriter = new PdfFileReportWriter(results, rootPath, testMultiple);
         txtWriter.WriteTxt();
         pdfWriter.GenerateReport();
 

@@ -152,7 +152,7 @@
 							<p class="mb-2"><span class="text-decoration-underline">Funkcja testowa</span>: @ToTitleCase(results[i].FunctionName)</p>
 							<p class="mb-2">Ilość iteracji @results[i].I</p>
 							<p class="mb-2">Rozmiar populacji: @results[i].N</p>
-							<p class="mb-2">Parametry wewnętrzne: @(string.Join(", ", results[0].Parameters ?? []))</p>
+							<p class="mb-2">Parametry wewnętrzne: @(string.Join(", ", results[i].Parameters ?? []))</p>
 							<p class="mb-2">Ilość wywołań funkcji testowej: @results[i].NumberOfEvaluationFitnessFunction</p>
 							<p class="mb-2"><span class="fw-bold">XBest</span>: (@string.Join(", ", results[i].XBest))</p>
 							<p class="mb-2"><span class="fw-bold">Fbest</span>: @results[i].FBest</p>
@@ -317,42 +317,42 @@ else if (testFail)
 
 		if (selectedAlgorithms != null && fitnessFunctions!= null && selectedFitnessFunction != null) 
 		{
-			foreach (var algorithm in selectedAlgorithms)
+			for (int objects = minN; objects <= maxN; objects += stepN)
 			{
-				var function = fitnessFunctions.Where(f => f.FunctionName == selectedFitnessFunction).FirstOrDefault();
-				if (function != null)
+				for (int iterations = minI; iterations <= maxI; iterations += stepI)
 				{
-					var paramInfo = await GetInnerParams(algorithm);
-					if (paramInfo != null)
+					foreach (var algorithm in selectedAlgorithms)
 					{
-						double[] parameters = new double[paramInfo.Length];
-						for (int i = 0; i < paramInfo.Length; i++)
-						{
-							if (useBestValues)
-								parameters[i] = paramInfo[i].BestValue;
-							else
-								parameters[i] = paramInfo[i].DefaultValue;
-						}
-
+						var function = fitnessFunctions.Where(f => f.FunctionName == selectedFitnessFunction).FirstOrDefault();
 						if (function != null)
 						{
-							int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ?
-								selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
-
-							for (int objects = minN; objects <= maxN; objects += stepN)
+							var paramInfo = await GetInnerParams(algorithm);
+							if (paramInfo != null)
 							{
-								for (int iterations = minI; iterations <= maxI; iterations += stepI)
-								{
+								double[] parameters = new double[paramInfo.Length];
+							for (int i = 0; i < paramInfo.Length; i++)
+							{
+								if (useBestValues)
+									parameters[i] = paramInfo[i].BestValue;
+								else
+									parameters[i] = paramInfo[i].DefaultValue;
+							}
+
+							if (function != null)
+							{
+								int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ?
+									selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
+								
 									testRequests.Add(
 										new TestRequest
-											{
-												Algorithm = algorithm,
-												N = objects,
-												I = iterations,
-												Fun = function.FunctionName,
-												Dim = dim,
-												Parameters = parameters
-											}
+										{
+											Algorithm = algorithm,
+											N = objects,
+											I = iterations,
+											Fun = function.FunctionName,
+											Dim = dim,
+											Parameters = parameters
+										}
 									);
 								}
 							}
@@ -390,7 +390,7 @@ else if (testFail)
 		try
 		{
 			TestRequest[] requests = await PrepareTestRequests();
-			var response = await Http.PostAsJsonAsync("/test", requests);
+			var response = await Http.PostAsJsonAsync("/test?testMultiple=true", requests);
 			var responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
 
 			if (responseBody != null)
