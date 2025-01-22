@@ -51,8 +51,40 @@ namespace MetaheuristicsAPI.Algorithms
             new ParamInfo("C4", "Parametr C4, Zalecane wartości: 0.5, 1.0", 0.5, 1.0, 0.5, 1.0)
         ];
         public ParamInfo[] ParamsInfo { get => _paramsInfo; set => _paramsInfo = value; }
-        IStateWriter IOptimizationAlgorithm.writer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        IStateReader IOptimizationAlgorithm.reader { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        #region StateWriter/ StateReadder
+        private class StateWriter : IStateWriter
+        {
+            ImmersedObject[] population;
+            int iterations;
+            int numberOfEvaluations;
+
+            public StateWriter(ImmersedObject[] population, int iterations, int numberOfEvaluations)
+            {
+                this.population = population;
+                this.iterations = iterations;
+                this.numberOfEvaluations = numberOfEvaluations;
+            }
+
+            public void updateState(ImmersedObject[] population, int iterations, int numberOfEvaluations)
+            {
+                this.population = population;
+                this.iterations = iterations;
+                this.numberOfEvaluations = numberOfEvaluations;
+            }
+
+            public void SaveToFileStateOfAlgorithm(string path)
+            {
+                
+            }
+        }
+        #endregion
+
+        IStateWriter _writer;
+        IStateWriter IOptimizationAlgorithm.writer { get => _writer; set => throw new NotImplementedException(); }
+
+        IStateReader _reader;
+        IStateReader IOptimizationAlgorithm.reader { get => _reader; set => throw new NotImplementedException(); }
         IGenerateTextReport IOptimizationAlgorithm.stringReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         IGeneratePDFReport IOptimizationAlgorithm.pdfReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public void Solve(fitnessFunction f, double[][] domain, params double[]? parameters)
