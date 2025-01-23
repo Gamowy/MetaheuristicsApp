@@ -10,7 +10,13 @@
 
 <h1>Porównywanie wybranych algorytmów</h1>
 <p class="lead">Porównaj wybrane algorytmy z automatycznym doborem najlepszych wartości parametrów</p>
-
+@if (canResume)
+{
+	<div class="alert alert-warning" role="alert">
+		Możliwe jest wznowienie wcześniej przerwanych obliczeń!<br />
+		<button type="button" class="btn btn-warning" @onclick="ResumeTest">Wznów obliczenia</button>
+	</div>
+}
 <form>
 	<p class="text-center fs-3 ">Algorytmy</p>
 	<div class="mb-3 border border-dark rounded p-3" id="formAlgorithm">
@@ -119,13 +125,15 @@
 			<p class="mb-3 text-center fs-5">Nie znaleziono funkcji testowych...</p>
 		}
 	</div>
-	<div class="mb-3 row text-center">
-		<div class="col ">
-			<Button id="launchTestButton" class="d-flex mx-auto justify-content-center" Color="ButtonColor.Primary" @onclick="ShowConfirmationDialog" Size="ButtonSize.Large"
-			LoadingText="&nbsp&nbspGenerowanie raportu..." Disabled="@isButtonDisabled" Loading="@isTestLaunched">
-				<span class="text">Uruchom test</span>
-			</Button>
-		</div>
+	<div class="mb-3 d-flex justify-content-center">
+		<Button id="launchTestButton" class="d-flex justify-content-center ms-2 me-2" Color="ButtonColor.Primary" @onclick="ShowConfirmationDialog" Size="ButtonSize.Large"
+		LoadingText="&nbsp&nbspGenerowanie raportu..." Disabled="@isButtonDisabled" Loading="@isTestLaunched">
+			<span class="text">Uruchom test</span>
+		</Button>
+		<Button id="stopTestButton" class="d-flex justify-content-center ms-2 me-2" Color="ButtonColor.Danger" @onclick="StopTest"
+		Size="ButtonSize.Large" Disabled="!isTestLaunched">
+			<span class="text">Zatrzymaj test</span>
+		</Button>
 	</div>
 </form>
 
@@ -217,12 +225,12 @@ else if (testFail)
 {
 	<div class="alert alert-danger" role="alert">
 		Niepowodzenie podczas wykonywania testów!<br />
-		Sprawdź połączenie internetowe oraz poprawnośc wprowadzonych parametrów.
 	</div>
 }
 
 @code
 {
+	private bool canResume = false;
 	private string[]? algorithms;
 
 	private bool useBestValues = false;
@@ -253,27 +261,22 @@ else if (testFail)
 
 	protected override async Task OnInitializedAsync()
 	{
-		// Get algorithms
 		try
 		{
+			// Check if previous test can be resumed
+			canResume = await Http.GetFromJsonAsync<bool>("test/resume?testMultiple=true");
+
+			// Get algorithms
 			algorithms = await Http.GetFromJsonAsync<string[]>("algorithms");
-		}
-		catch (HttpRequestException e)
-		{
-			algorithms = null;
-			Console.WriteLine("Failed to fetch algorithms from server: " + e.Message);
-		}
 
-
-		// Get fitness functions
-		try
-		{
+			// Get fitness functions
 			fitnessFunctions = await Http.GetFromJsonAsync<FitnessFunctionSchema[]>("functions");
 		}
 		catch (HttpRequestException e)
 		{
+			algorithms = null;
 			fitnessFunctions = null;
-			Console.WriteLine("Failed to fetch fitness functions from server: " + e.Message);
+			Console.WriteLine("Failed to fetch data from server: " + e.Message);
 		}
 	}
 
@@ -330,19 +333,19 @@ else if (testFail)
 							if (paramInfo != null)
 							{
 								double[] parameters = new double[paramInfo.Length];
-							for (int i = 0; i < paramInfo.Length; i++)
-							{
-								if (useBestValues)
-									parameters[i] = paramInfo[i].BestValue;
-								else
-									parameters[i] = paramInfo[i].DefaultValue;
-							}
+								for (int i = 0; i < paramInfo.Length; i++)
+								{
+									if (useBestValues)
+										parameters[i] = paramInfo[i].BestValue;
+									else
+										parameters[i] = paramInfo[i].DefaultValue;
+								}
 
-							if (function != null)
-							{
-								int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ?
-									selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
-								
+								if (function != null)
+								{
+									int dim = (function.AnyDims || function.Dims!.Contains(selectedDim)) ?
+										selectedDim : function.Dims!.Where(d => d < selectedDim).Max();
+
 									testRequests.Add(
 										new TestRequest
 										{
@@ -384,17 +387,54 @@ else if (testFail)
 		}
 	}
 
-	private async Task LaunchTest()
+	private async Task ResumeTest()
+	{
+		isTestLaunched = true;
+		canResume = false;
+		StateHasChanged();
+
+		await LaunchTest(resume: true);
+
+		isTestLaunched = false;
+		StateHasChanged();
+	}
+
+	private async Task StopTest()
+	{
+		try
+		{
+			var request = await Http.PostAsync("/test/stop?value=true", null);
+			if (request.IsSuccessStatusCode)
+				canResume = true;
+		}
+		catch (HttpRequestException e)
+		{
+			Console.WriteLine("Failed to stop test: " + e.Message);
+		}
+	}
+
+	private async Task LaunchTest(bool resume = false)
 	{
 		testFail = false;
 		try
 		{
 			TestRequest[] requests = await PrepareTestRequests();
-			var response = await Http.PostAsJsonAsync("/test?testMultiple=true", requests);
-			var responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
+			TestResponse? responseBody;
+			if (resume)
+			{
+				var response = await Http.PostAsJsonAsync("/test?testMultiple=true&resumeTest=true", requests);
+				responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
+				canResume = false;
+			}
+			else
+			{
+				var response = await Http.PostAsJsonAsync("/test?testMultiple=true", requests);
+				responseBody = await response.Content.ReadFromJsonAsync<TestResponse>();
+			}
 
 			if (responseBody != null)
 			{
+				canResume = false;
 				results = responseBody.Results;
 				pdfPath = $"{Http.BaseAddress!}data/pdfReports/{responseBody.PdfFilePath}";
 

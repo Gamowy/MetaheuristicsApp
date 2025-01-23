@@ -1,4 +1,5 @@
 ﻿using MetaheuristicsAPI.Interfaces;
+using System.Runtime.CompilerServices;
 
 namespace MetaheuristicsAPI.Algorithms
 {
@@ -53,21 +54,20 @@ namespace MetaheuristicsAPI.Algorithms
         public ParamInfo[] ParamsInfo { get => _paramsInfo; set => _paramsInfo = value; }
 
         #region StateWriter/ StateReadder
+        static string StatesFolder = "AlgorithmStates";
+        static string StatePath = "archimedes_state.txt";
+
         private class StateWriter : IStateWriter
         {
-            ImmersedObject[] population;
+            ImmersedObject[] population = default!;
+            int N, I;
             int iterations;
             int numberOfEvaluations;
 
-            public StateWriter(ImmersedObject[] population, int iterations, int numberOfEvaluations)
+            public void UpdateState(int N, int I, ImmersedObject[] population, int iterations, int numberOfEvaluations)
             {
-                this.population = population;
-                this.iterations = iterations;
-                this.numberOfEvaluations = numberOfEvaluations;
-            }
-
-            public void updateState(ImmersedObject[] population, int iterations, int numberOfEvaluations)
-            {
+                this.N = N;
+                this.I = I;
                 this.population = population;
                 this.iterations = iterations;
                 this.numberOfEvaluations = numberOfEvaluations;
@@ -75,15 +75,75 @@ namespace MetaheuristicsAPI.Algorithms
 
             public void SaveToFileStateOfAlgorithm(string path)
             {
-                
+                try
+                {
+                    using (StreamWriter sw = new StreamWriter(path))
+                    {
+                        sw.WriteLine(N.ToString());
+                        sw.WriteLine(I.ToString());
+                        sw.WriteLine(iterations.ToString());
+                        sw.WriteLine(numberOfEvaluations.ToString());
+                        sw.WriteLine(population.Length.ToString());
+                        foreach (ImmersedObject obj in population)
+                        {
+                            sw.WriteLine(string.Join(" ", obj.x));
+                            sw.WriteLine(obj.FValue.ToString());
+                            sw.WriteLine(string.Join(" ", obj.den));
+                            sw.WriteLine(string.Join(" ", obj.vol));
+                            sw.WriteLine(string.Join(" ", obj.acc));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to save state of archimedes optimization: " + ex.Message);
+                }
+            }
+        }
+
+        private class StateReader : IStateReader
+        {
+            List<ImmersedObject> population = new List<ImmersedObject>();
+            int? iterations;
+            int? numberOfEvaluations;
+            int? N, I;
+
+            public (int?, int?, ImmersedObject[]?, int?, int?) GetState()
+            {
+                return (N, I, population.ToArray(), iterations, numberOfEvaluations);
+            }
+
+            public void LoadFromFileStateOfAlgorithm(string path)
+            {
+                try
+                {
+                    using (StreamReader sr = new StreamReader(path))
+                    {
+                        N = int.Parse(sr.ReadLine()!);
+                        I = int.Parse(sr.ReadLine()!);
+                        iterations = int.Parse(sr.ReadLine()!);
+                        numberOfEvaluations = int.Parse(sr.ReadLine()!);
+                        int populationLength = int.Parse(sr.ReadLine()!);
+                        for (int i = 0; i < populationLength; i++)
+                        {
+                            double[] x = Array.ConvertAll(sr.ReadLine()!.Split(' '), double.Parse);
+                            double[] den = Array.ConvertAll(sr.ReadLine()!.Split(' '), double.Parse);
+                            double[] vol = Array.ConvertAll(sr.ReadLine()!.Split(' '), double.Parse);
+                            double[] acc = Array.ConvertAll(sr.ReadLine()!.Split(' '), double.Parse); 
+                        }
+                    }
+                } catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to load state of archimedes optimization: " + ex.Message);
+                }
             }
         }
         #endregion
 
-        IStateWriter _writer;
+        StateWriter _writer = new StateWriter();
         IStateWriter IOptimizationAlgorithm.writer { get => _writer; set => throw new NotImplementedException(); }
 
-        IStateReader _reader;
+        StateReader _reader = new StateReader();
         IStateReader IOptimizationAlgorithm.reader { get => _reader; set => throw new NotImplementedException(); }
         IGenerateTextReport IOptimizationAlgorithm.stringReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         IGeneratePDFReport IOptimizationAlgorithm.pdfReportGenerator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -154,6 +214,15 @@ namespace MetaheuristicsAPI.Algorithms
             public double[] den;
             public double[] vol;
             public double[] acc;
+
+            public ImmersedObject(double[] x, double FValue, double[] den, double[] vol, double[] acc)
+            {
+                this.x = x;
+                this.FValue = FValue;
+                this.den = den;
+                this.vol = vol;
+                this.acc = acc;
+            }
             public ImmersedObject(int dim, double[] lb, double[] ub)
             {
                 Random rand = new Random();
@@ -203,11 +272,14 @@ namespace MetaheuristicsAPI.Algorithms
             return x;
         }
 
-        private double NormalizeAcceleration(int index, double acc)
+        private void NormalizeAcceleration(int index)
         {
             double minAcc = ObjectPopulation.Min(obj => obj.acc[index]);
             double maxAcc = ObjectPopulation.Max(obj => obj.acc[index]);
-            return 0.9 * ((acc - minAcc) / (maxAcc - minAcc)) + 0.1;
+            foreach (var obj in ObjectPopulation)
+            {
+                obj.acc[index] = 0.9 * ((obj.acc[index] - minAcc) / (maxAcc - minAcc)) + 0.1;
+            }
         }
         #endregion
 
@@ -252,6 +324,22 @@ namespace MetaheuristicsAPI.Algorithms
         {
             Random rand = new Random();
             int t = 1;
+            //if (File.Exists(Path.Join(StatesFolder, StatePath))) 
+            //{
+            //    _reader.LoadFromFileStateOfAlgorithm(Path.Join(StatesFolder, StatePath));
+            //    (int? n, int? i, ImmersedObject[]? savedObjects, int? savedT, int? savedNumberOfEval) = _reader.GetState();
+            //    if (n != null && i != null && savedObjects != null && savedT != null && savedNumberOfEval != null)
+            //    {
+            //        if (N == n && I == i) 
+            //        {
+            //            ObjectPopulation = savedObjects;
+            //            t = savedT.Value + 1;
+            //            NumberOfEvaluationFitnessFunction = savedNumberOfEval.Value;
+            //            SelectBestObject();
+            //        }
+            //    }
+            //}
+
             while (t <= I)
             {
                 double TF = Math.Exp((Double)(t - I) / I);
@@ -275,7 +363,7 @@ namespace MetaheuristicsAPI.Algorithms
                         for (int i = 0; i < Dim; i++)
                         {
                             obj.acc[i] = (mr.den[i] + mr.vol[i] * mr.acc[i]) / (obj.den[i] * obj.vol[i]);
-                            obj.acc[i] = NormalizeAcceleration(i, obj.acc[i]);
+                            NormalizeAcceleration(i);
                             xNew[i] = obj.x[i] + C1 * rand.NextDouble() * obj.acc[i] * d * (xRand[i] - obj.x[i]);
                         }
                     }
@@ -285,7 +373,7 @@ namespace MetaheuristicsAPI.Algorithms
                         for (int i = 0; i < Dim; i++)
                         {
                             obj.acc[i] = (BestObject.den[i] + BestObject.vol[i] * BestObject.acc[i]) / (obj.den[i] * obj.vol[i]);
-                            obj.acc[i] = NormalizeAcceleration(i, obj.acc[i]);
+                            NormalizeAcceleration(i);
 
                             double P = 2 * rand.NextDouble() - C4;
                             double F = (P <= 0.5) ? 1.0 : -1.0;
@@ -306,8 +394,12 @@ namespace MetaheuristicsAPI.Algorithms
                     }
                 }
                 SelectBestObject();
+                //_writer.UpdateState(N, I, ObjectPopulation, t, NumberOfEvaluationFitnessFunction);
+                //_writer.SaveToFileStateOfAlgorithm(Path.Join(StatesFolder, StatePath));
                 t++;
             }
+            //if (File.Exists(Path.Join(StatesFolder, StatePath)))
+            //    File.Delete(Path.Join(StatesFolder, StatePath));
             return FBest;
         }
         #endregion

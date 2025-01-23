@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Storage for reports
 MetaheuristicsAPI/MetaheuristicsAPI/wwwroot/*
+
+# State of algorithms
+MetaheuristicsAPI/MetaheuristicsAPI/AlgorithmStates/*

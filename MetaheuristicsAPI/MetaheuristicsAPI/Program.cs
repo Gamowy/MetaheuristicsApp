@@ -30,6 +30,7 @@ if (app.Environment.IsDevelopment())
 var rootPath = $"{Directory.GetCurrentDirectory()}/wwwroot";
 var txtReportsPath = $"{rootPath}/data/txtReports";
 var pdfReportsPath = $"{rootPath}/data/pdfReports";
+var algorithmStatesPath = $"AlgorithmStates";
 if (!Directory.Exists(txtReportsPath))
 {
     Directory.CreateDirectory(txtReportsPath);
@@ -37,6 +38,10 @@ if (!Directory.Exists(txtReportsPath))
 if (!Directory.Exists(pdfReportsPath))
 {
     Directory.CreateDirectory(pdfReportsPath);
+}
+if (!Directory.Exists(algorithmStatesPath))
+{
+    Directory.CreateDirectory(algorithmStatesPath);
 }
 app.UseStaticFiles();
 app.UseHttpsRedirection();
@@ -95,13 +100,56 @@ app.MapGet("reports/paths", () =>
 .Produces(StatusCodes.Status404NotFound)
 .WithOpenApi();
 
-// POST: computes algorithm tests
-app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultiple=false) =>
+SavedTestState? savedTestState = null;
+bool stopTest = false;
+
+// GET: return boolean value indicating whether test can be resumed
+app.MapGet("/test/resume", ([FromQuery] bool testMultiple = false) =>
 {
-    TestResults[] results = new TestResults[requests.Length];
+    if (savedTestState != null)
+    {
+        if (testMultiple == savedTestState.testMultiple)
+            return Results.Ok(true);
+    }
+    return Results.Ok(false);
+})
+.WithName("CheckTestResumable")
+.WithDescription("Returns boolean value indicating whether test can be resumed.")
+.Produces<bool>(StatusCodes.Status200OK)
+.WithOpenApi();
+
+// POST: posts request to stop tests
+app.MapPost("/test/stop", ([FromQuery] bool value) =>
+{
+    stopTest = value;
+    return Results.Ok();
+})
+.WithName("StopTest")
+.WithDescription("Stops the running test")
+.Produces(StatusCodes.Status200OK)
+.WithOpenApi();
+
+// POST: computes algorithm tests
+app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultiple=false, [FromQuery] bool resumeTest = false) =>
+{  
     try
     {
-        for (int i = 0; i < requests.Length; i++)
+        TestResults[] results;
+        int index = 0;
+        if (resumeTest && savedTestState != null)
+        {
+            index = savedTestState.lastTestIndex; 
+            requests = savedTestState.requests;
+            results = savedTestState.results;
+            testMultiple = savedTestState.testMultiple;
+        }
+        else
+        {
+            results = new TestResults[requests.Length];
+            savedTestState = new SavedTestState(0, requests, results, testMultiple);
+        }
+  
+        for (int i = index; i < requests.Length; i++)
         {
             IOptimizationAlgorithm? optimizationAlgorithm = AlgorithmsProvider.GetAlgorithm(requests[i].Algorithm, requests[i].N, requests[i].I);
             if (optimizationAlgorithm == null)
@@ -134,6 +182,14 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
                 NumberOfEvaluationFitnessFunction = optimizationAlgorithm.NumberOfEvaluationFitnessFunction
             };
             results[i] = result;
+            savedTestState.results = results;
+            savedTestState.lastTestIndex = i + 1;
+
+            if (stopTest)
+            {
+                stopTest = false;
+                return Results.BadRequest("Test stopped");
+            }
         }
         TextFileReportWriter txtWriter = new TextFileReportWriter(results, rootPath, testMultiple);
         PdfFileReportWriter pdfWriter = new PdfFileReportWriter(results, rootPath, testMultiple);
@@ -145,6 +201,8 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
             Results = results,
             PdfFilePath = pdfWriter.fileName
         };
+        
+        savedTestState = null;
         return Results.Ok(response);
     }
     catch (Exception ex)
