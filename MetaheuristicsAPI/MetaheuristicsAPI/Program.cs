@@ -101,12 +101,13 @@ app.MapGet("reports/paths", () =>
 .WithOpenApi();
 
 SavedTestState? savedTestState = null;
+bool isTestRunning = false;
 bool stopTest = false;
 
 // GET: return boolean value indicating whether test can be resumed
 app.MapGet("/test/resume", ([FromQuery] bool testMultiple = false) =>
 {
-    if (savedTestState != null)
+    if (savedTestState != null && !isTestRunning)
     {
         if (testMultiple == savedTestState.testMultiple)
             return Results.Ok(true);
@@ -131,7 +132,8 @@ app.MapPost("/test/stop", ([FromQuery] bool value) =>
 
 // POST: computes algorithm tests
 app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultiple=false, [FromQuery] bool resumeTest = false) =>
-{  
+{
+    isTestRunning = true;
     try
     {
         TestResults[] results;
@@ -188,6 +190,7 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
             if (stopTest)
             {
                 stopTest = false;
+                isTestRunning = false;
                 return Results.BadRequest("Test stopped");
             }
         }
@@ -203,10 +206,12 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
         };
         
         savedTestState = null;
+        isTestRunning = false;
         return Results.Ok(response);
     }
     catch (Exception ex)
     {
+        isTestRunning = false;
         Console.WriteLine($"Computing error: {ex.Message}");                   
         return Results.BadRequest($"Computing error: {ex.Message}");
     }
@@ -215,7 +220,7 @@ app.MapPost("/test", async (TestRequest[] requests, [FromQuery] bool testMultipl
 .WithDescription("Posts request for computing algorithm tests on given test functions with specified parametrs.")
 .Produces <TestResponse>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
-.WithRequestTimeout(TimeSpan.FromMinutes(10))
+.WithRequestTimeout(TimeSpan.FromMinutes(5))
 .WithOpenApi();
 
 app.Run();

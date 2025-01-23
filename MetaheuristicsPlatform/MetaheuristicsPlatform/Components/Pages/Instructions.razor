@@ -4,3 +4,61 @@
 
 <h1>Instrukcja użytkownika</h1>
 <p class="lead">Instrukcja korzystania z platformy do testowania algorytmów metaheurystycznych</p>
+
+<p class="fs-4 ">Testowanie pojedynczego algorytmu</p>
+<ul>
+	<li>Dostępne algorytmu optymalizacyjne oraz funkcje testowe są automatycznie pobierane z serwera podczas ładowania strony.</li>
+	<li>Możliwy jest wybór zakresu zmienności parametrów zewnętrznych.</li>
+	<li>Parametry wewnętrzne są automatycznie pobierane po wyborze algorytmu.</li> 
+	<li>Możliwe jest również automatyczne wybranie najbardziej optymalnych wartości parametrów.</li>
+	<li>Możliwy jest wybór dowolnej ilości funkcji testowych, na których mają być wykonane testy</li>
+	<li>Dla wybranych funkcji testowych możliwe jest wybranie maksymalnej liczby szukanych parametrów 
+		(jeżeli funkcja nie jest określona dla wybranej ilości parametrów, to zostanie wybrana maksymalna możliwa liczba)</li>
+</ul>
+
+<p class="fs-4 ">Porównanie algorytmów</p>
+<ul>
+	<li>Możliwy jest wybór dowolnej ilości algorymów do porównania, oraz jednej wybranej funkcji celu</li>
+	<li>Możliwy jest wybor pomiędzy domyślnymi wartościami parametrów wewnętrznych, lub najlepszymi znanymi wartościami</li>
+</ul>
+
+<p class="fs-4 ">Uruchamianie testów</p>
+<ul>
+	<li>W celu uruchomienia testu należy wcisnąć przycisk "Uruchom test"</li>
+	<li>Długość wykonywania testu zależy od wartości parametrów oraz ilości testowanych algorytmów/funkcji celu</li>
+	<li>W każdej chwili możliwe jest zatrzymanie testu wciskając przyisk "Zatrzymaj test"</li>
+	<li>Po zakończeniu testów rezultaty są prezentowane w 3 formatach: txt, pdf oraz na wykresach
+		<img src="img/TestResults.png" class="img-fluid img-thumbnail" />
+	</li>
+</ul>
+
+<p class="fs-4">Wykresy</p>
+<ul>
+	<li>Rezultaty każdego testu sa prezentowane na interkatywnych wykresach</li>
+	<li>Najeżdzając myszką na wykres, można zobaczyć dokładne wartości w wybranym miejscu</li>
+	<li>Możliwe jest ukrywanie zbiorów danych np. dla wybranj funkcji celu, klikając w jej nazwe pod tytułem wykresu.
+		Nazwy ukrytych zbiorów danych są przekreślone	
+		<img src="img/Charts.png" class="img-fluid img-thumbnail" />
+	</li>
+</ul>
+
+<p class="fs-4">Raporty</p>
+<ul>
+	<li>Rezultaty ukończonych testów zapisywane są w raportach txt oraz pdf, są one dostępne bezpośrednio na stronie do uruchamiania testów</li>
+	<li>Po odświeżeniu strony, poprzednie raporty są dostępne na stronie z raportami. Raporty są posortowane według daty utworzenia.</li>
+	<li>Interaktywne wykresy nie są zapisywane w historii raportów, ale można je zapisać ręcznie na komputerze jako zdjęcie klikając na nie prawym przyciskiem myszy
+		<img src="img/Reports.png" class="img-fluid img-thumbnail" />
+	</li>
+</ul>
+
+<p class="fs-4">Wznawianie zatrzymanych testów</p>
+<ul>
+	<li>W przypadku zatrzymania testu, możliwe jest jego wznowienie</li>
+	<li>Aby wznowić test, należy przejść do strony z odpowiednimi testami, oraz znajdujący się w żółtym polu przycisk do kontynuacji</li>
+	<li>W przypadku wyjścia lub odświeżenia strony przed zakończeniem testu, wystarczy poczekać na jego automatyczne zakończenie a następnie sprawdzić najnowszy raport
+		na stronie z raportami
+	</li>
+	<li>W przypadku problemów po stronie serwera, po odzyskaniu połączenia możliwe będzie wznowienie przerwanych testów</li>
+	<li>Uwaga: po uruchomieniu nowego testu wznowienie poprzednich testów nie będzie już możliwe</li>
+	<img src="img/ResumeTests.png" class="img-fluid img-thumbnail" />
+</ul>
