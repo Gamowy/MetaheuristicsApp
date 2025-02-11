@@ -1,4 +1,5 @@
-﻿using MetaheuristicsAPI.Interfaces;
+﻿using MetaheuristicsAPI.FitnessFunctions.ZadanieAA;
+using MetaheuristicsAPI.Interfaces;
 using MetaheuristicsAPI.Schemas;
 
 namespace MetaheuristicsAPI.FitnessFunctions
@@ -15,6 +16,8 @@ namespace MetaheuristicsAPI.FitnessFunctions
                 new FitnessFunctionSchema("beale", false, [2]),
                 new FitnessFunctionSchema("bunkinn6", false, [2]),
                 new FitnessFunctionSchema("himmelblau", false, [2]),
+                new FitnessFunctionSchema("tsfde fractional boundary", false, [7]),
+                new FitnessFunctionSchema("zadanie aa", false, [3])
             ];
         }
 
@@ -34,6 +37,10 @@ namespace MetaheuristicsAPI.FitnessFunctions
                     return TestFunctions.BunkinN6;
                 case "himmelblau":
                     return TestFunctions.Himmelblau;
+                case "tsfde fractional boundary":
+                    return new TSFDE.TSFDE_fractional_boundary().fintnessFunction;
+                case "zadanie aa":
+                    return new ObjectiveFunction().FunkcjaCelu.Wartosc;
                 default:
                     return null;
             }
@@ -55,6 +62,10 @@ namespace MetaheuristicsAPI.FitnessFunctions
                     return TestFunctions.BunkinN6Domain();
                 case "himmelblau":
                     return TestFunctions.HimmelblauDomain();
+                case "tsfde fractional boundary":
+                    return new TSFDE.TSFDE_fractional_boundary().fitnessFunctionDomain();
+                case "zadanie aa":
+                    return new ObjectiveFunction().FunkcjaCelu.Domena();
                 default:
                     return null;
             }
